@@ -39,15 +39,20 @@ package edu.rice.cs.drjava.model.definitions.indent;
 import edu.rice.cs.drjava.model.AbstractDJDocument;
 import edu.rice.cs.drjava.DrJava;
 import edu.rice.cs.drjava.config.OptionConstants;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.NewIndenter;
 
 /** Singleton class to construct and use the indentation decision tree.
   * @version $Id: Indenter.java 5677 2012-08-17 11:09:48Z rcartwright $
   */
 public class Indenter {
   
+  private NewIndenter newindenter;
+  
   public Indenter(int indentLevel) { 
     _indentLevel = indentLevel;
-    buildTree(indentLevel); 
+    //buildTree(indentLevel); 
+	
+	newindenter = new NewIndenter(indentLevel);
   }
   
   protected int _indentLevel;
@@ -158,6 +163,7 @@ public class Indenter {
     */
   public boolean indent(AbstractDJDocument doc, Indenter.IndentReason reason) {
 //    Utilities.showDebug("Indenter.indent called on doc "  + doc);
-    return _topRule.indentLine(doc, reason);
+    return newindenter.indent(doc);
+	//return _topRule.indentLine(doc, reason);
   }
 }
