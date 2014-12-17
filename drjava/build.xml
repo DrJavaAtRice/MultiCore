@@ -176,7 +176,7 @@
        Build Target
        ************ -->
   
-  <target name="build" depends="test, jar" description="Shortcut for 'test' and 'jar'">
+  <target name="build" depends="clean, test, jar" description="Shortcut for 'clean', 'test', and 'jar'">
   </target>
   
 
@@ -218,7 +218,7 @@
        Compilation Targets
        ******************* -->
        
-  <!-- The following target assumes that javac resolves a Java 8 compiler -->
+  <!-- The following target assumes that javac resolves a Java 7 compiler -->
   <target name="compile" depends="generate-source, do-compile, copy-resources, unjar-libs"
           description="Compile all source files (after generating the source)">
   </target>
@@ -236,13 +236,13 @@
     </move>
     
     <javac srcdir="src" destdir="classes/base" source="1.6" target="1.6"
-           bootclasspath="${java8-runtime}" sourcepath="" includeAntRuntime="no"
+           bootclasspath="${java7-runtime}" sourcepath="" includeAntRuntime="no"
            executable="javac" fork="yes" memoryMaximumSize="1024M"
-           debug="on" optimize="off" deprecation="on"	>
+           debug="on" optimize="off" deprecation="on" >
       <classpath>
         <!-- TODO: Remove this dependency on tools.jar by refactoring and moving all the dependent
              debugger code into the "platform" module -->
-        <pathelement location="${java8-tools}" />
+        <pathelement location="${java7-tools}" />
         <fileset refid="libs" />
         <pathelement location="lib/buildlib/junit.jar" />
         <pathelement location="lib/buildlib/netbeans-memory-leak-utils.jar" />
@@ -290,7 +290,7 @@
     <javac srcdir="src" destdir="classes/base" source="1.6" target="1.6"
            bootclasspath="${java6-runtime}" sourcepath="" includeAntRuntime="no"
            executable="javac" fork="yes" memoryMaximumSize="1024M"
-           debug="on" optimize="off" deprecation="on"	>
+           debug="on" optimize="off" deprecation="on" >
       <classpath>
         <!-- TODO: Remove this dependency on tools.jar by refactoring and moving all the dependent
              debugger code into the "platform" module -->
@@ -342,7 +342,7 @@
     <javac srcdir="src" destdir="classes/base" source="1.6" target="1.6"
            bootclasspath="${java7-runtime}" sourcepath="" includeAntRuntime="no"
            executable="javac" fork="yes" memoryMaximumSize="1024M"
-           debug="on" optimize="off" deprecation="on"	>
+           debug="on" optimize="off" deprecation="on" >
       <classpath>
         <!-- TODO: Remove this dependency on tools.jar by refactoring and moving all the dependent
              debugger code into the "platform" module -->
@@ -484,7 +484,7 @@
                 <limit minutes="${test-timeout}" failonerror="true">
                   <antcall target="${do-test-target}">
                     <param name="test-filter-string" value="@{test-filter-string-iter}" />
-                  </antcall>
+                    </antcall>
                 </limit>
               </sequential>
             </for>
@@ -544,9 +544,41 @@
     
   </target>
   
-  
+ 
   <target name="do-test" depends="resolve-jvm-args, resolve-junit-jar">
-    <echo message="Running all tests matching '${test-filter-string}' with command '${test-jvm}', using '${junit-jar}' and '${test-tools}'" />
+     <echo message="Running all tests matching '${test-filter-string}' with command '${test-jvm}', using '${junit-jar}' and '${test-tools}'" />
+ 
+     <foreach 
+      target="do-single-test"
+      maxthreads="3"
+      inheritAll="yes"
+      inheritRefs="yes"
+      parallel="yes"
+      param="param1">
+        <path>
+          <fileset dir="classes/test">
+          <filename name="**/*${test-filter-string}*/**" />
+          <filename name="**/*Test.class" />
+        </fileset>
+      </path>
+    </foreach>
+  
+
+  </target>
+
+
+  <target name="do-single-test" depends="resolve-jvm-args, resolve-junit-jar">
+     <!-- we need to have relative path -->
+
+    <property name="temp-dir" value="${param1}" relative="yes" />
+
+    <pathconvert property="relative-dir" pathsep="${line.separator}">
+    <propertyresource name="temp-dir" />
+    <mapper type="regexp"
+        from="[classes]+/[test]+/(.*)"
+        to="\1"/>
+  </pathconvert>
+  
     <extendclasspath path="${junit-jar}" />
     <junit haltonfailure="${test-halt}" failureproperty="test-failed"
            fork="yes" forkmode="perTest" maxmemory="2G" jvm="${test-jvm}" dir="${basedir}">
@@ -569,15 +601,16 @@
         <!-- Add any properties that should be passed on -->
       </syspropertyset>
       <jvmarg line="${jvm-args} ${concjunit-bootclasspath}" />
+      
       <formatter classname="${test-formatter-class}" usefile="${test-output-to-file}" />
       <batchtest>
         <fileset dir="classes/test">
-          <filename name="**/*${test-filter-string}*/**" />
-          <filename name="**/*Test.class" />
+          <filename name="${relative-dir}" />
         </fileset>
       </batchtest>
     </junit>
     <fail if="test-failed" message="One or more unit tests failed."/>
+
   </target>
 
 
@@ -693,21 +726,21 @@
           description="Create the jar file with all classes and libs (compiling first)">
     <available property="junit-jar-to-include-exists" file="${junit-jar-to-include}" />
     <fail message="Can't find ${junit-jar-to-include}"
-	  unless="junit-jar-to-include-exists" />
+    unless="junit-jar-to-include-exists" />
     <jar jarfile="${ant.project.name}.jar">
       <manifest>
         <attribute name="Main-Class" value="${main-class}" />
         <attribute name="Built-By" value="${user.name}" />
         <attribute name="Build-Version" value="${version-tag}" />
-	<!-- put the right version stamp into the jar file -->
-	<attribute name="Created-By" value="${java.version}"/>
+  <!-- put the right version stamp into the jar file -->
+  <attribute name="Created-By" value="${java.version}"/>
       </manifest>
       <fileset dir="classes/lib" excludes="about.html"/>
       <fileset dir="classes/base" />
       <!-- Include the specified version of JUnit and rename it to junit.jar -->
       <zipfileset dir="." includes="${junit-jar-to-include}" fullpath="junit.jar" />
       <zipfileset dir="." includes="${md5-temp-name}"
-		  fullpath="${md5-properties-path}" />
+      fullpath="${md5-properties-path}" />
     </jar>
   </target>
 
@@ -718,8 +751,8 @@
         <attribute name="Main-Class" value="${main-class}" />
         <attribute name="Built-By" value="${user.name}" />
         <attribute name="Build-Version" value="${version-tag}" />
-	<!-- put the right version stamp into the jar file -->
-	<attribute name="Created-By" value="${java.version}"/>
+  <!-- put the right version stamp into the jar file -->
+  <attribute name="Created-By" value="${java.version}"/>
       </manifest>
       <fileset dir="classes/base" />
     </jar>
@@ -801,7 +834,7 @@
   
   
   <target name="findbugs" depends="assert-findbugs-exists, compile, resolve-java6-tools"
-	      description="Generate a findbugs report (after compiling)">
+        description="Generate a findbugs report (after compiling)">
     <taskdef name="findbugs" classpath="lib/buildlib/findbugs-ant.jar"
              classname="edu.umd.cs.findbugs.anttask.FindBugsTask" />
     <delete file="docs/findbugs.html" />
@@ -1027,14 +1060,14 @@
         <include name="*.exe" />
       </fileset>
     </delete>
-	
+  
   </target>
   
   <target name="clean-concjunit" unless="skip-clean">
     <echo message="Deleting ConcJUnit artifacts" />
     
     <delete file="instr.concjunit.txt" failonerror="${clean-can-fail}" />
-    <delete file="rt.concjunit.jar" failonerror="${clean-can-fail}" />	
+    <delete file="rt.concjunit.jar" failonerror="${clean-can-fail}" />  
   </target>
   
 
@@ -1305,23 +1338,23 @@
 
     <!-- Make file names relative to classes/lib -->
     <pathconvert property="classes.lib.relative" refid="classes.lib.fileset"
-		 targetos="unix">
+     targetos="unix">
       <map from="${basedir}/classes/lib/" to=""/>
     </pathconvert>
 
     <!-- Print file names to a text file -->
     <tempfile property="classes.lib.tempfile"
-	      suffix=".txt" prefix="classes.lib." deleteonexit="true"/>
+        suffix=".txt" prefix="classes.lib." deleteonexit="true"/>
     <for list="${classes.lib.relative}" delimiter=":" param="file">
       <sequential>
-	<echo file="${classes.lib.tempfile}" append="true"
-	      message="@{file}${line.separator}"/>
+  <echo file="${classes.lib.tempfile}" append="true"
+        message="@{file}${line.separator}"/>
       </sequential>
     </for>
 
     <!-- Run generation program, using text file as input -->
     <java classname="edu.rice.cs.util.MD5ChecksumProperties"
-	  dir="classes/lib" fork="true">
+    dir="classes/lib" fork="true">
       <classpath>
         <pathelement location="classes/base" />
         <pathelement location="classes/lib" />
@@ -1335,20 +1368,20 @@
     <fileset id="classes.base.fileset" dir="classes/base"/>
 
     <pathconvert property="classes.base.relative" refid="classes.base.fileset"
-		 targetos="unix">
+     targetos="unix">
       <map from="${basedir}/classes/base/" to=""/>
     </pathconvert>
 
     <tempfile property="classes.base.tempfile"
-	      suffix=".txt" prefix="classes.base." deleteonexit="true"/>
+        suffix=".txt" prefix="classes.base." deleteonexit="true"/>
     <for list="${classes.base.relative}" delimiter=":" param="file">
       <sequential>
-	<echo file="${classes.base.tempfile}" append="true"
-	      message="@{file}${line.separator}"/>
+  <echo file="${classes.base.tempfile}" append="true"
+        message="@{file}${line.separator}"/>
       </sequential>
     </for>
     <java classname="edu.rice.cs.util.MD5ChecksumProperties"
-	  dir="classes/base" fork="true">
+    dir="classes/base" fork="true">
       <classpath>
         <pathelement location="classes/base" />
         <pathelement location="classes/lib" />
@@ -1360,12 +1393,12 @@
 
     <!-- Generate MD5 checksums for lib/junit.jar -->
     <tempfile property="junit.jar.tempfile"
-	      suffix=".txt" prefix="junit.jar." deleteonexit="true"/>
+        suffix=".txt" prefix="junit.jar." deleteonexit="true"/>
 
     <echo file="${junit.jar.tempfile}"
-	  message="${junit-jar-to-include}"/>
+    message="${junit-jar-to-include}"/>
     <java classname="edu.rice.cs.util.MD5ChecksumProperties"
-	  dir="${basedir}" fork="true">
+    dir="${basedir}" fork="true">
       <classpath>
         <pathelement location="classes/base" />
         <pathelement location="classes/lib" />
@@ -1377,8 +1410,8 @@
 
     <!-- rename the line in md5.properties to junit.jar=... -->
     <replace file="${basedir}/${md5-temp-name}"
-	     token="${junit-jar-to-include}"
-	     value="junit.jar"/>
+       token="${junit-jar-to-include}"
+       value="junit.jar"/>
   </target>  
   
   <!-- ***************************
