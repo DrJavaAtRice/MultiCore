@@ -68,7 +68,7 @@ public class DrJavaTestCase extends TestCase {
     super.setUp();  // declared to throw Exception, forcing throws clause on preceding line
     Utilities.TEST_MODE = true;
     final String newName = System.getProperty("drjava.test.config");
-    assert newName != null;
+    //assert newName != null;
 
     if (newName != null) {  // in deployed code, assertion checking may be turned off
       Utilities.invokeAndWait(new Runnable() {

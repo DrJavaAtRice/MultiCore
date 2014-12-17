@@ -766,14 +766,16 @@ public abstract class InteractionsModel implements InteractionsModelCallback {
     * @param t The Throwable thrown by System.exit
     */
   protected abstract void _interpreterResetFailed(Throwable t);
+   
+  /** Any extra action to perform (beyond notifying listeners) when the interpreter won't start.
+    * @param e The Exception indicating the interpreter won't start
+    */
+  protected abstract void _interpreterWontStart(final Exception e);
   
   /** Notifies listeners that the interpreter reset failed. (Subclasses must maintain listeners.)
     * @param t Throwable explaining why the reset failed.
     */
   protected abstract void _notifyInterpreterResetFailed(Throwable t);
-  
-  /** Action to perform when the interpreter won't start. */
-  protected abstract void _interpreterWontStart(Exception e);
   
   public String getBanner() { return _banner; }
   
@@ -793,7 +795,7 @@ public abstract class InteractionsModel implements InteractionsModelCallback {
 //    * and assumes read lock or write lock is already held. 
 //    */
 //  protected void advanceCaret(final int n) {
-//    /* In legacy unit tests, _pane can apparently be null in some cases.  It can also be mutated in the middle of run() 
+///* In legacy unit tests, _pane can apparently be null in some cases.  It can also be mutated in the middle of run() 
 //     in InteractionsDJDocumentTest.testStylesListContentAndReset. */
 //    final InteractionsPane pane = _pane;  
 ////    if (Utilities.TEST_MODE && pane == null) return;  // Some legacy unit tests do not set up an interactions pane
@@ -815,7 +817,9 @@ public abstract class InteractionsModel implements InteractionsModelCallback {
     });
   }
   
-  /** Called when a new Java interpreter has registered and is ready for use. */
+  /** Called when a new Java interpreter has registered and is ready for use. 
+    * @param wd working directory for interpreter.
+    */
   public void interpreterReady(final File wd) {
     debug.logStart();
 //    System.err.println("interpreterReady(" + wd + ") called in InteractionsModel");  // DEBUG

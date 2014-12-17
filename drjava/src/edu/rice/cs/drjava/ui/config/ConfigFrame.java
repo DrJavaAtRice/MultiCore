@@ -863,6 +863,8 @@ public class ConfigFrame extends SwingFrame {
     addOptionComponent(panel, 
                        newStringOptionComponent(OptionConstants.JAVADOC_1_7_LINK));
     addOptionComponent(panel, 
+                       newStringOptionComponent(OptionConstants.JAVADOC_1_8_LINK));
+    addOptionComponent(panel, 
                        newStringOptionComponent(OptionConstants.JUNIT_LINK));
 
     VectorStringOptionComponent additionalJavadoc =
@@ -1023,7 +1025,7 @@ public class ConfigFrame extends SwingFrame {
   /** Adds all of the components for the Miscellaneous panel of the preferences window. */
   private void _setupMiscPanel(ConfigPanel panel) {
     /* Dialog box options */
-    addOptionComponent(panel, newIntegerOptionComponent(OptionConstants.INDENT_LEVEL));
+    addOptionComponent(panel, newIntegerOptionComponent(OptionConstants.INDENT_INC));
     addOptionComponent(panel, newIntegerOptionComponent(OptionConstants.RECENT_FILES_MAX_SIZE));
     addOptionComponent(panel, newIntegerOptionComponent(OptionConstants.BROWSER_HISTORY_MAX_SIZE));
     

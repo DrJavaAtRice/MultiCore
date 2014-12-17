@@ -294,6 +294,9 @@ public class ConfigDescriptions {
     add(OptionConstants.JAVADOC_1_7_LINK,
         "Javadoc 1.7 URL",
         "URL for the Java 1.7 API, for generating links to library classes.");
+    add(OptionConstants.JAVADOC_1_8_LINK,
+        "Javadoc 1.8 URL",
+        "URL for the Java 1.8 API, for generating links to library classes.");
     add(OptionConstants.JUNIT_LINK,
         "JUnit URL",
         "URL for the JUnit API, for \"Open Java API Javadoc\".");
@@ -464,7 +467,7 @@ public class ConfigDescriptions {
         "The number of days between automatic new version checks.");
     
     /* Dialog box options */
-    add(OptionConstants.INDENT_LEVEL,
+    add(OptionConstants.INDENT_INC,
         "Indent Level",
         "The number of spaces to use for each level of indentation.");
     add(OptionConstants.RECENT_FILES_MAX_SIZE, "Recent Files List Size",
