@@ -53,7 +53,7 @@ import edu.rice.cs.drjava.model.definitions.*;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.*;
 import edu.rice.cs.drjava.model.FinalizationListener;
 import edu.rice.cs.drjava.model.definitions.ClassNameNotFoundException;
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 //import edu.rice.cs.drjava.model.definitions.DefinitionsDocument.WrappedPosition;
 
 import edu.rice.cs.util.OperationCanceledException;

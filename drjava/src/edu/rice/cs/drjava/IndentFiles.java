@@ -41,7 +41,7 @@ import java.util.Vector;
 // TODO: Change the usage of these classes to Collections style.
 // TODO: Do these need to be synchronized?
 import edu.rice.cs.plt.io.IOUtil;
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 import edu.rice.cs.drjava.model.definitions.DefinitionsDocument;
 import edu.rice.cs.drjava.model.GlobalEventNotifier;
 

@@ -45,9 +45,13 @@ import edu.rice.cs.drjava.config.OptionConstants;
   */
 public class Indenter {
   
+  //private NewIndenter newindenter;
+  
   public Indenter(int indentLevel) { 
     _indentLevel = indentLevel;
-    buildTree(indentLevel); 
+    //buildTree(indentLevel); 
+	
+	//newindenter = new NewIndenter(indentLevel);
   }
   
   protected int _indentLevel;
@@ -156,8 +160,10 @@ public class Indenter {
     * @param doc document containing line to be indented  Assumes that reduced lock is already held.
     * @return true if the condition tested by the top rule holds, false otherwise
     */
-  public void indent(AbstractDJDocument doc, Indenter.IndentReason reason) {
+  //public boolean indent(AbstractDJDocument doc, Indenter.IndentReason reason) {
 //    Utilities.showDebug("Indenter.indent called on doc "  + doc);
-    _topRule.indentLine(doc, reason);
-  }
+    //newindenter.indent(doc, reason);
+	//return true;
+	//return _topRule.indentLine(doc, reason);
+  //}
 }
