@@ -2,24 +2,24 @@ package edu.rice.cs.drjava.model.definitions.indent.statemachine;
 
 /** 
  * A trigger for a state transition.
- * Calls to <code>canApply</code> will decide if the current input matches some expected value.
+ * Calls to <code>canApply</code> will decide if the current input matches the given char.
  */
-public class TriggerSubstring implements Trigger
+public class TriggerChar implements Trigger
 {
-  private String substring;
+  private char check;
   
   /**
-   * @param substring a string to check for on the tape.
+   * @param check The expected next character
    */
-  public TriggerSubstring(String substring) {
-    this.substring = substring;
+  public TriggerChar(char check) {
+    this.check = check;
   }
   
   /**
    * Determine if the transition can apply to the input tape and stack.
    * This will not modify the input tape or the stack.
    * 
-   * In this case, check if the tape contains a certain string.
+   * In this case, check if the tape contains a certain char.
    * 
    * @param input The current input tape
    * @param stack The current context
@@ -28,6 +28,6 @@ public class TriggerSubstring implements Trigger
     if(input.atEnd())
       return false;
     
-    return input.nextMatches(substring);
+    return input.nextMatches(check);
   }
 }

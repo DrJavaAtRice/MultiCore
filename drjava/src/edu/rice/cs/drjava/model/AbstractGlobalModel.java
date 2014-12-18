@@ -106,7 +106,7 @@ import edu.rice.cs.drjava.model.definitions.DefinitionsDocument;
 import edu.rice.cs.drjava.model.definitions.DefinitionsEditorKit;
 import edu.rice.cs.drjava.model.definitions.DocumentUIListener ;
 import edu.rice.cs.drjava.model.definitions.InvalidPackageException;
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.HighlightStatus;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.ReducedModelControl;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.ReducedModelState;

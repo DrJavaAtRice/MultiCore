@@ -11,12 +11,22 @@ public class StateSymbol
 {
   private String name;
   private ArrayList<StateTransition> transitions;
+  private int indent;
   
   /**
    * @param name An identifying name for the state.
    */
   public StateSymbol(String name) {
+    this(name, 0);
+  }
+  
+  /**
+   * @param name An identifying name for the state.
+   * @param indent The indentation level when in this state
+   */
+  public StateSymbol(String name, int indent) {
     this.name = name;
+    this.indent = indent;
     this.transitions = new ArrayList<StateTransition>();
   }
   
@@ -38,17 +48,25 @@ public class StateSymbol
    */
   public StateSymbol doTransition(InputTape input, ContextStack stack) {
     for(StateTransition transition : transitions) {
-     if(transition.canApply(input, stack))
-       return transition.apply(input, stack);
+      if(transition.canApply(input, stack))
+        return transition.apply(input, stack);
     }
     
     throw new RuntimeException("Unable to find valid transition from " + this.toString() + " with next character " + input.peek());
   }
   
   /**
+   * The current state may contribute the indentation level.
+   * @return The contribution to the indentation level by this state.
+   */
+  public int getIndentationBase() {
+    return indent;
+  }
+  
+  /**
    * Represent a state as a string for the sake of debugging.
    */
   public String toString() {
-   return "$State[" + name + "]"; 
+    return "$State[" + name + "]"; 
   }
 }

@@ -39,7 +39,7 @@ package edu.rice.cs.drjava.model;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.*;
 import edu.rice.cs.util.text.SwingDocumentInterface;
 import edu.rice.cs.util.OperationCanceledException;
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 
 import java.util.ArrayList;
 import javax.swing.text.AttributeSet;

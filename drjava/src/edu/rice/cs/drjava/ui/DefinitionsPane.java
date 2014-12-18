@@ -55,7 +55,7 @@ import edu.rice.cs.drjava.model.*;
 import edu.rice.cs.drjava.model.definitions.CompoundUndoManager;
 import edu.rice.cs.drjava.model.definitions.DefinitionsEditorKit;
 import edu.rice.cs.drjava.model.definitions.NoSuchDocumentException;
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.ReducedModelState;
 import edu.rice.cs.drjava.config.*;
 import edu.rice.cs.drjava.DrJava;

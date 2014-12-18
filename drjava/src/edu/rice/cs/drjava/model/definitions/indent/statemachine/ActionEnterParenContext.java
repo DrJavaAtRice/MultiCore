@@ -25,7 +25,7 @@ public class ActionEnterParenContext implements Action {
   public void apply(InputTape input, ContextStack stack) {
     int line = input.getLinePosition();
     int current = input.getPosition();
-    int currentIndentation = current - line - 1;
+    int currentIndentation = current - line;
     stack.push(new ContextStack.ContextSymbol("OpenContext", tag, currentIndentation));
   }
 }

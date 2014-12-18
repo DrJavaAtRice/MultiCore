@@ -39,20 +39,19 @@ package edu.rice.cs.drjava.model.definitions.indent;
 import edu.rice.cs.drjava.model.AbstractDJDocument;
 import edu.rice.cs.drjava.DrJava;
 import edu.rice.cs.drjava.config.OptionConstants;
-import edu.rice.cs.drjava.model.definitions.indent.statemachine.NewIndenter;
 
 /** Singleton class to construct and use the indentation decision tree.
   * @version $Id: Indenter.java 5677 2012-08-17 11:09:48Z rcartwright $
   */
 public class Indenter {
   
-  private NewIndenter newindenter;
+  //private NewIndenter newindenter;
   
   public Indenter(int indentLevel) { 
     _indentLevel = indentLevel;
     //buildTree(indentLevel); 
 	
-	newindenter = new NewIndenter(indentLevel);
+	//newindenter = new NewIndenter(indentLevel);
   }
   
   protected int _indentLevel;
@@ -161,9 +160,10 @@ public class Indenter {
     * @param doc document containing line to be indented  Assumes that reduced lock is already held.
     * @return true if the condition tested by the top rule holds, false otherwise
     */
-  public boolean indent(AbstractDJDocument doc, Indenter.IndentReason reason) {
+  //public boolean indent(AbstractDJDocument doc, Indenter.IndentReason reason) {
 //    Utilities.showDebug("Indenter.indent called on doc "  + doc);
-    return newindenter.indent(doc);
+    //newindenter.indent(doc, reason);
+	//return true;
 	//return _topRule.indentLine(doc, reason);
-  }
+  //}
 }

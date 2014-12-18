@@ -34,6 +34,18 @@ public class PushDownAutomata
   }
   
   /**
+   * Restart the machine. Begin running the machine on the provided input, stack, and state.
+   * @param input Input tape to process.
+   * @param inputStack Stack to begin with
+   * @param inputState State to begin on
+   */
+  public void start(InputTape input, ContextStack inputStack, StateSymbol inputState) {
+   this.stack = inputStack;
+   this.currentState = inputState;
+   this.input = input;
+  }
+  
+  /**
    * Advance the machine by a single transition.
    */
   public void advance() {

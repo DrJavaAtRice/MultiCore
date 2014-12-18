@@ -48,7 +48,7 @@ import edu.rice.cs.drjava.DrJavaTestCase;
 import edu.rice.cs.drjava.model.DJDocument;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.BraceInfo;
 import edu.rice.cs.drjava.config.*;
-import edu.rice.cs.drjava.model.definitions.indent.*;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.*;
 import edu.rice.cs.drjava.model.GlobalEventNotifier;
 
 //import edu.rice.cs.util.FileOps;
@@ -337,6 +337,8 @@ public final class IndentTest extends DrJavaTestCase {
       "break;\n" +
       "}\n";
     
+    // :
+      
     String indented =
       "switch (x) {\n" +
       "  case 1:\n" +     // Starting new statement after brace
@@ -1605,12 +1607,12 @@ public final class IndentTest extends DrJavaTestCase {
       "  public void m() {\n" + 
       "    _junitLocationEnabledListener = new ConfigOptionListeners.\n" + 
       "      RequiresDrJavaRestartListener<Boolean>(this, \"Use External JUnit\"));\n" + 
-      "                                         _junitLocationListener = new ConfigOptionListeners.\n" + 
-      "                                           RequiresDrJavaRestartListener<File>(_configFrame, \"JUnit Location\"));\n" + 
-      "                                         _rtConcJUnitLocationEnabledListener = new ConfigOptionListeners.\n" + 
-      "                                           RequiresInteractionsRestartListener<Boolean>(_configFrame, \"Use ConcJUnit Runtime\"));\n" + 
-      "                                         _rtConcJUnitLocationListener = new ConfigOptionListeners.\n" + 
-      "                                           RequiresInteractionsRestartListener<File>(_configFrame, \"ConcJUnit Runtime Location\"));\n" + 
+      "    _junitLocationListener = new ConfigOptionListeners.\n" + 
+      "      RequiresDrJavaRestartListener<File>(_configFrame, \"JUnit Location\"));\n" + 
+      "    _rtConcJUnitLocationEnabledListener = new ConfigOptionListeners.\n" + 
+      "      RequiresInteractionsRestartListener<Boolean>(_configFrame, \"Use ConcJUnit Runtime\"));\n" + 
+      "    _rtConcJUnitLocationListener = new ConfigOptionListeners.\n" + 
+      "      RequiresInteractionsRestartListener<File>(_configFrame, \"ConcJUnit Runtime Location\"));\n" + 
       "  }\n" + 
       "}\n";
     

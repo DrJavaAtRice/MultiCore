@@ -1,5 +1,5 @@
 package edu.rice.cs.drjava.model.definitions.indent.statemachine;
-
+  
 /** 
  * An action for a state transition.
  * Calls to <code>apply</code> will add a new context element to the stack. This context element will increase

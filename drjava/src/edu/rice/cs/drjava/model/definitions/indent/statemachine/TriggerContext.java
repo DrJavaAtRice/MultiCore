@@ -2,7 +2,7 @@ package edu.rice.cs.drjava.model.definitions.indent.statemachine;
 
 /** 
  * A trigger for a state transition.
- * Calls to <code>canApply</code> on a Trigger will decide if the stack is in the proper context.
+ * Calls to <code>canApply</code> will decide if the stack is in the proper context.
  */
 public class TriggerContext implements Trigger
 {

@@ -41,7 +41,7 @@ import edu.rice.cs.drjava.config.OptionConstants;
 import edu.rice.cs.drjava.config.OptionEvent;
 import edu.rice.cs.drjava.config.OptionListener;
 
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.BraceInfo;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.ReducedModelControl;
 import edu.rice.cs.drjava.model.definitions.reducedmodel.HighlightStatus;
@@ -198,14 +198,14 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
     _listener1 = new OptionListener<Integer>() {
       public void optionChanged(OptionEvent<Integer> oce) {
 //        System.err.println("Changing INDENT_LEVEL for " + this + " to " + oce.value);
-        indenter.buildTree(oce.value);
+        indenter.build(oce.value);
       }
     };
     
     _listener2 = new OptionListener<Boolean>() {
       public void optionChanged(OptionEvent<Boolean> oce) {
 //        System.err.println("Reconfiguring indenter to use AUTO_CLOSE_COMMENTS = " + oce.value);
-        indenter.buildTree(DrJava.getConfig().getSetting(INDENT_LEVEL));
+        indenter.build(DrJava.getConfig().getSetting(INDENT_LEVEL));
       }
     };
     
@@ -960,6 +960,9 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
     // Begins a compound edit.
     // int key = startCompoundEdit(); // commented out in connection with the FrenchKeyBoard Fix
     
+    // Store the intermediate states of the indenter
+    Indenter.RunningState state = null;
+    
     try {
       if (selStart == selEnd) {  // single line to indent
 //          Utilities.showDebug("selStart = " + selStart + " currentLocation = " + _currentLocation);
@@ -969,10 +972,9 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
         setCurrentLocation(lineStart);
         // Indent, updating current location if necessary.
 //          Utilities.showDebug("Indenting line at offset " + selStart);
-        if (_indentLine(reason)) {
-          setCurrentLocation(oldPosition.getOffset()); // moves currentLocation back to original offset on line
-          if (onlySpacesBeforeCurrent()) move(_getWhiteSpace());  // passes any additional spaces before firstNonWS
-        }
+        state = _indentLine(reason, state);
+        setCurrentLocation(oldPosition.getOffset()); // moves currentLocation back to original offset on line
+        if (onlySpacesBeforeCurrent()) move(_getWhiteSpace());  // passes any additional spaces before firstNonWS
       }
       else _indentBlock(selStart, selEnd, reason, pm);
     }
@@ -997,6 +999,9 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
     _queryCache = new HashMap<Query, Object>(INIT_CACHE_SIZE);
     _offsetToQueries = new TreeMap<Integer, List<Query>>();
     
+    // Store the intermediate states of the indenter
+    Indenter.RunningState state = null;
+    
     // Keep marker at the end. This Position will be the correct endpoint no matter how we change 
     // the doc doing the indentLine calls.
     final Position endPos = this.createUnwrappedPosition(end);
@@ -1009,7 +1014,7 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
       Position walkerPos = this.createUnwrappedPosition(walker);
       // Indent current line
       // We ignore current location info from each line, because it probably doesn't make sense in a block context.
-      _indentLine(reason);  // this operation is atomic
+      state = _indentLine(reason, state);  // this operation is atomic
       // Move back to walker spot
       setCurrentLocation(walkerPos.getOffset());
       walker = walkerPos.getOffset();
@@ -1031,7 +1036,9 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
   }
   
   /** Indents a line using the Indenter.  Public ONLY for testing purposes. */
-  public boolean _indentLine(Indenter.IndentReason reason) { return getIndenter().indent(this, reason); }
+  public void _indentLine(Indenter.IndentReason reason) { getIndenter().indent(this, reason); }
+  
+  private Indenter.RunningState _indentLine(Indenter.IndentReason reason, Indenter.RunningState state) { return getIndenter().indent(this, reason, state); };
   
   /** Returns the "intelligent" beginning of line.  If currPos is to the right of the first 
     * non-whitespace character, the position of the first non-whitespace character is returned.  

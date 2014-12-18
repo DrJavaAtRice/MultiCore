@@ -40,6 +40,18 @@ public class InputTape
   }
   
   /**
+   * Determine if the future character on a tape matches a specified character.
+   * @param check The character to check for
+   * @return true if the input matches the contents of the tape at the head.
+   */
+  public boolean nextMatches(char check) {
+    if(position >= content.length())
+      return false;
+    
+    return content.charAt(position) == check;
+  }
+  
+  /**
    * @param length The number of steps to advance the head.
    */
   public void step(int length) {

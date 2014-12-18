@@ -15,6 +15,10 @@ public class ContextStack
    this.base = new ArrayList<ContextSymbol>(); 
   }
   
+  public ContextStack(ContextStack toCopy) {
+   this.base = new ArrayList<ContextSymbol>(toCopy.base); 
+  }
+  
   /**
    * Push an additional element to the end of the stack.
    * @param symbol The context to push
@@ -39,7 +43,7 @@ public class ContextStack
    if(this.isEmpty())
      return null;
    return this.base.remove(this.base.size() - 1);
-  }
+  }  
   
   /**
    * Return the last element of the stack.

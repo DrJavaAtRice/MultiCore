@@ -39,7 +39,7 @@ package edu.rice.cs.drjava.model;
 import javax.swing.text.BadLocationException;
 import java.util.List;
 
-import edu.rice.cs.drjava.model.definitions.indent.Indenter;
+import edu.rice.cs.drjava.model.definitions.indent.statemachine.Indenter;
 import edu.rice.cs.util.OperationCanceledException;
 
 /**
@@ -196,7 +196,8 @@ public final class GlobalIndentTest extends GlobalModelTestCase {
     openDoc.insertString(BAR_CALL_1.length(), BAR_CALL_2, null);
     openDoc.setCurrentLocation(BAR_CALL_1.length());
     int loc = openDoc.getCurrentLocation();
-    openDoc.indentLines(loc, loc, Indenter.IndentReason.OTHER, null);
+    openDoc.indentLines(loc, loc, Indenter.IndentReason.OTHER, null);    
+    System.out.println(BAR_CALL_1 + BAR_CALL_2);
     _assertContents(BAR_CALL_1 + "    " + BAR_CALL_2, openDoc);
     _assertLocation(BAR_CALL_1.length() + 4, openDoc);
   }
