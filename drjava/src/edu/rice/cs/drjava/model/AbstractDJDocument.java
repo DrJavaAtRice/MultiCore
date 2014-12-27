@@ -197,7 +197,7 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
 //    System.err.println("Installing Indent Option Listener for " + this);
     _listener1 = new OptionListener<Integer>() {
       public void optionChanged(OptionEvent<Integer> oce) {
-//        System.err.println("Changing INDENT_LEVEL for " + this + " to " + oce.value);
+//        System.err.println("Changing INDENT_INC for " + this + " to " + oce.value);
         indenter.build(oce.value);
       }
     };
@@ -205,7 +205,7 @@ public abstract class AbstractDJDocument extends SwingDocument implements DJDocu
     _listener2 = new OptionListener<Boolean>() {
       public void optionChanged(OptionEvent<Boolean> oce) {
 //        System.err.println("Reconfiguring indenter to use AUTO_CLOSE_COMMENTS = " + oce.value);
-        indenter.build(DrJava.getConfig().getSetting(INDENT_LEVEL));
+        indenter.build(DrJava.getConfig().getSetting(INDENT_INC));
       }
     };
     
