@@ -228,7 +228,7 @@
           description="Compile all source files (after generating the source)">
   </target>
   
-  <target name="do-compile" depends="resolve-java7-runtime, resolve-java7-tools">
+  <target name="do-compile" depends="resolve-java8-runtime, resolve-java8-tools">
   
     <echo message="Compiling src directory to classes/base and classes/test with command 'javac'" />
     
@@ -247,7 +247,7 @@
       <classpath>
         <!-- TODO: Remove this dependency on tools.jar by refactoring and moving all the dependent
              debugger code into the "platform" module -->
-        <pathelement location="${java7-tools}" />
+        <pathelement location="${java8-tools}" />
         <fileset refid="libs" />
 	<fileset refid="jrelibs" />
         <fileset refid="extlibs" />
@@ -557,35 +557,29 @@
  
     <foreach 
       target="do-single-test"
-      maxthreads="3"
+      maxthreads="4"
       inheritAll="yes"
       inheritRefs="yes"
       parallel="yes"
-      param="param1">
+      param="absolute-dir">
         <path>
           <fileset dir="classes/test">
-          <filename name="**/*${test-filter-string}*/**" />
-          <filename name="**/*Test.class" />
-        </fileset>
-      </path>
+            <filename name="**/*${test-filter-string}*/**" />
+            <filename name="**/*Test.class" />
+          </fileset>
+        </path>
     </foreach>
 
   </target>
 
   <target name="do-single-test" depends="resolve-jvm-args, resolve-junit-jar">
      <!-- we need to have relative path -->
-
-    <property name="temp-dir" value="${param1}" relative="yes" />
-
-    <pathconvert property="relative-dir" pathsep="${line.separator}">
-      <propertyresource name="temp-dir" />
-      <mapper type="regexp"
-          from="[classes]+/[test]+/(.*)"
-          to="\1"/>
+    <pathconvert property="relative-dir">
+      <fileset file="${absolute-dir}" />
+      <map from="C:/Users/Jonathan/Documents/1 Rice/COMP501/MultiCore/drjava/classes/test/" to="" />
     </pathconvert>
   
     <extendclasspath path="${junit-jar}" />
-    <jacoco:coverage xmlns:jacoco="antlib:org.jacoco.ant">
     <junit haltonfailure="${test-halt}" failureproperty="test-failed"
            fork="yes" forkmode="perTest" maxmemory="2G" jvm="${test-jvm}" dir="${basedir}">
       <classpath>
@@ -609,36 +603,31 @@
       <jvmarg line="${jvm-args} ${concjunit-bootclasspath}" />
       <formatter classname="${test-formatter-class}" usefile="${test-output-to-file}" />
       <batchtest fork="true">
-        <fileset dir="classes/test">
-          <filename name="**/*${test-filter-string}*/**" />  
-          <filename name="**/*Test.class" />
-        </fileset>
+        <fileset dir="classes/test" includes="${relative-dir}" />
       </batchtest>
     </junit>
-    </jacoco:coverage>
     <fail if="test-failed" message="One or more unit tests failed."/>
-    <antcall target="generate-cover" />
   </target>
 
   <target name = "generate-cover" xmlns:jacoco="antlib:org.jacoco.ant">
-  <jacoco:report>
+    <jacoco:report>
                         
-    <executiondata>
-        <file file="${coverage-exec}"/>
-    </executiondata>
+      <executiondata>
+          <file file="${coverage-exec}"/>
+      </executiondata>
                         
-    <structure name="drjava">
-        <classfiles>
-            <fileset dir="classes/base"/>
-        </classfiles>
-        <sourcefiles encoding="UTF-8">
-            <fileset dir="src"/>
-        </sourcefiles>
-    </structure>
+      <structure name="drjava">
+          <classfiles>
+              <fileset dir="classes/base"/>
+          </classfiles>
+          <sourcefiles encoding="UTF-8">
+              <fileset dir="src"/>
+          </sourcefiles>
+      </structure>
                         
-    <html destdir="${coverage-report-dir}"/>
+      <html destdir="${coverage-report-dir}"/>
                         
-  </jacoco:report>
+    </jacoco:report>
   </target>
 
 
@@ -960,8 +949,8 @@
     <delete dir="classes" failonerror="${clean-can-fail}" />
     <delete dir="cloverdb" failonerror="${clean-can-fail}" />
     <delete dir="benchmarkSources" failonerror="${clean-can-fail}" />
-    <delete dir="benchmarkResults" failonerror="${clean-can-fail}" />  
-
+    <delete dir="benchmarkResults" failonerror="${clean-can-fail}" />
+    
     <delete includeemptydirs="true" failonerror="${clean-can-fail}">
       <fileset dir="testFiles">
         <exclude name="**" />

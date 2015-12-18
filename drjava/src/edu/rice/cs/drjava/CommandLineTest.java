@@ -358,7 +358,8 @@ public final class CommandLineTest extends DrJavaTestCase {
    * @throws InvalidPackageException if the document contains an invalid package statement
    */
   public void testRelativePath() throws IOException, InvalidPackageException {
-    String funnyName = "DrJava_automatically_deletes_this_1";
+    Long threadId = Thread.currentThread().getId();
+    String funnyName = "DrJava_automatically_deletes_this_1_" + threadId.toString();
     File newDirectory = mkTempDir(funnyName);
     File relativeFile = new File(newDirectory, "X.java");
     
@@ -375,7 +376,8 @@ public final class CommandLineTest extends DrJavaTestCase {
    * converting it to a canonical filename.
    */
   public void testDotPaths() {
-    String funnyName = "DrJava_automatically_deletes_this_2";
+    Long threadId = Thread.currentThread().getId();
+    String funnyName = "DrJava_automatically_deletes_this_2_" + threadId.toString();
     File newDirectory = mkTempDir(funnyName);
     
     assertTrue("child directory created OK", new File(newDirectory, "childDir").mkdir());
