@@ -3703,27 +3703,6 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
         }
       };
       
-      
-      OptionListener<String> link17OptionListener = new OptionListener<String>() {
-        public void optionChanged(OptionEvent<String> oce) {
-          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
-          if (linkVersion.equals(JAVADOC_1_7_TEXT) ||
-              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
-            clearJavaAPISet();
-          }
-        }
-      };
-      
-      OptionListener<String> link18OptionListener = new OptionListener<String>() {
-        public void optionChanged(OptionEvent<String> oce) {
-          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
-          if (linkVersion.equals(JAVADOC_1_8_TEXT) ||
-              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
-            clearJavaAPISet();
-          }
-        }
-      };
-      
       DrJava.getConfig().addOptionListener(JAVADOC_1_6_LINK, link16OptionListener);
       DrJava.getConfig().addOptionListener(JAVADOC_1_7_LINK, link17OptionListener);
       DrJava.getConfig().addOptionListener(JAVADOC_1_8_LINK, link18OptionListener);

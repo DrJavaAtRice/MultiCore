@@ -576,7 +576,7 @@
      <!-- we need to have relative path -->
     <pathconvert property="relative-dir">
       <fileset file="${absolute-dir}" />
-      <map from="C:/Users/Jonathan/Documents/1 Rice/COMP501/MultiCore/drjava/classes/test/" to="" />
+      <map from="${basedir}/classes/test/" to="" />
     </pathconvert>
   
     <extendclasspath path="${junit-jar}" />
