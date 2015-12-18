@@ -56,11 +56,9 @@ import edu.rice.cs.drjava.model.FindResult;
 import edu.rice.cs.drjava.model.ClipboardHistoryModel;
 import edu.rice.cs.drjava.model.MovingDocumentRegion;
 import edu.rice.cs.drjava.model.RegionManager;
-
 import edu.rice.cs.plt.lambda.Runnable1;
 import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.util.swing.BorderlessScrollPane;
-import edu.rice.cs.util.swing.Utilities;
 import edu.rice.cs.util.text.SwingDocument;
 
 /** The tabbed panel that handles requests for finding and replacing text.
@@ -444,8 +442,8 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
     
     BorderlessScrollPane _findPane = new BorderlessScrollPane(_findField);
     BorderlessScrollPane _replacePane = new BorderlessScrollPane(_replaceField);
-    _findPane.setHorizontalScrollBarPolicy(BorderlessScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-    _replacePane.setHorizontalScrollBarPolicy(BorderlessScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    _findPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+    _replacePane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     
     JPanel findPanel = new JPanel(new BorderLayout(5,5));
     findPanel.add(findLabelPanel, BorderLayout.WEST);
@@ -549,7 +547,7 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
     return _findField.requestFocusInWindow();
   }
   
-  /** Getter method for the _findField component */
+  /** @return the _findField component */
   JTextPane getFindField() { return _findField; }
 
   /** Performs "find all" command. */
@@ -585,7 +583,20 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
     EventQueue.invokeLater(new Runnable() { public void run() { panel.getRegTree().scrollRowToVisible(0); } });
   }
   
-  /** Performs "find all" with the specified options. */
+  /** 
+   * Performs "find all" with the specified options. 
+   * @param searchStr string to search for
+   * @param searchAll true if we should search all documents
+   * @param searchSelectionOnly true if we should search only the current selection
+   * @param matchCase true if search should be case-sensitive
+   * @param wholeWord true if we want to match the whole word
+   * @param noComments true if we want to ignore comments
+   * @param noTestCases true if we want to ignore test cases
+   * @param startDoc first document to search within
+   * @param rm a RegionManager
+   * @param region a MovingDocumentRegion
+   * @param panel panel in which to display search results
+   */
   public void findAll(String searchStr, final boolean searchAll, final boolean searchSelectionOnly, final boolean matchCase,
                       final boolean wholeWord, final boolean noComments, final boolean noTestCases,
                       final OpenDefinitionsDocument startDoc, final RegionManager<MovingDocumentRegion> rm, final MovingDocumentRegion region,
@@ -810,7 +821,10 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
     _replaceButton.requestFocusInWindow();
   }
   
-  /** Called from MainFrame in response to opening this or changes in the active document. */
+  /** 
+   * Called from MainFrame in response to opening this or changes in the active document. 
+   * @param defPane a DefinitionsPane
+   */
   void beginListeningTo(DefinitionsPane defPane) {
     if (_defPane == null) {
       // removed so it doesn't give the pane focus when switching documents
@@ -959,7 +973,10 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
   public void setSearchBackwards(boolean b) { _machine.setSearchBackwards(b); }
   public boolean isSearchBackwards() { return _machine.isSearchBackwards(); }
   
-  /** Sets the font of the find and replace fields to f. */
+  /** 
+   * Sets the font of the find and replace fields to f. 
+   * @param f font to be set
+   */
   public void setFieldFont(Font f) {
     _findField.setFont(f);
     _replaceField.setFont(f);
@@ -1032,9 +1049,13 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
 //     _findField.selectAll();
 //   }
   
-  /** This method is used to select the item that has been inserted in a replacement.  Assumes the current offset
-    * identifies the found or replaced item.  In a forward search, this offset is the RIGHT edge of the found/replaced
-    * item; in a backwards search it is the LEFT edge. */
+  /** 
+   * This method is used to select the item that has been inserted in a 
+   * replacement.  Assumes the current offset identifies the found or 
+   * replaced item.  In a forward search, this offset is the RIGHT edge of 
+   * the found/replaced item; in a backwards search it is the LEFT edge. 
+   * @param length length of the found or replaced item
+   */
   private void _selectFoundOrReplacedItem(int length) {
     int offset = _machine.getCurrentOffset();
     int from, to;
@@ -1063,13 +1084,17 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
 //    _selectFoundItem(from, to);
 //  }
   
-  /** Will select the identified text (from, to).  Note that positions are technically between characters, so there
-    * is no distinction between open and closed intervals.  Originally highlighted the text, but we ran into problems
-    * with the document remove method changing the view to where the cursor was located, resulting in 
-    * replace constantly jumping from the replaced text back to the cursor.  There was a 
-    * removePreviousHighlight method which was removed since selections are removed automatically upon
-    * a caret change.
-    */
+  /** 
+   * Will select the identified text (from, to).  Note that positions are 
+   * technically between characters, so there is no distinction between open 
+   * and closed intervals.  Originally highlighted the text, but we ran into problems
+   * with the document remove method changing the view to where the cursor was located, resulting in 
+   * replace constantly jumping from the replaced text back to the cursor.  There was a 
+   * removePreviousHighlight method which was removed since selections are removed automatically upon
+   * a caret change.
+   * @param from left bound on selection
+   * @param to right bound on selection
+   */
   private void _selectFoundOrReplacedItem(int from, int to) {
     _defPane.centerViewOnOffset(from);
     _defPane.select(from, to);
@@ -1143,7 +1168,7 @@ class FindReplacePanel extends TabbedPanel implements ClipboardOwner {
     }
   };  
   
-  /***************** METHODS FOR TESTING PURPOSES ONLY  ***********************/
+  /*--------------------- METHODS FOR TESTING PURPOSES ONLY ---------------------*/
   public DefinitionsPane getDefPane() { return _defPane; }
   public JButton getFindNextButton() {return _findNextButton; }
 }

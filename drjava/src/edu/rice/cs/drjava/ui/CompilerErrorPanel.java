@@ -43,7 +43,6 @@ import edu.rice.cs.drjava.config.OptionListener;
 import edu.rice.cs.drjava.model.SingleDisplayModel;
 import edu.rice.cs.drjava.model.compiler.CompilerModel;
 import edu.rice.cs.drjava.model.compiler.CompilerErrorModel;
-import edu.rice.cs.drjava.model.compiler.CompilerErrorModel;
 import edu.rice.cs.drjava.model.compiler.CompilerInterface;
 import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.plt.iter.IterUtil;
@@ -150,7 +149,11 @@ public class CompilerErrorPanel extends ErrorPanel {
     reset();
   }
   
-  /** Reset the errors to the current error information immediately following compilation. */
+  /** 
+   * Reset the errors to the current error information immediately following 
+   * compilation. 
+   * @param excludedFiles files to set as excluded
+   */
   public void reset(File[] excludedFiles) {
     _excludedFiles = excludedFiles;
     reset();

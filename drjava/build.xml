@@ -228,7 +228,7 @@
           description="Compile all source files (after generating the source)">
   </target>
   
-  <target name="do-compile" depends="resolve-java8-runtime, resolve-java8-tools">
+  <target name="do-compile" depends="resolve-java7-runtime, resolve-java7-tools">
   
     <echo message="Compiling src directory to classes/base and classes/test with command 'javac'" />
     
@@ -610,7 +610,7 @@
       <formatter classname="${test-formatter-class}" usefile="${test-output-to-file}" />
       <batchtest fork="true">
         <fileset dir="classes/test">
-          <filename name="**/*${test-filter-string}*/**" />
+          <filename name="**/*${test-filter-string}*/**" />  
           <filename name="**/*Test.class" />
         </fileset>
       </batchtest>
@@ -960,8 +960,8 @@
     <delete dir="classes" failonerror="${clean-can-fail}" />
     <delete dir="cloverdb" failonerror="${clean-can-fail}" />
     <delete dir="benchmarkSources" failonerror="${clean-can-fail}" />
-    <delete dir="benchmarkResults" failonerror="${clean-can-fail}" />
-    
+    <delete dir="benchmarkResults" failonerror="${clean-can-fail}" />  
+
     <delete includeemptydirs="true" failonerror="${clean-can-fail}">
       <fileset dir="testFiles">
         <exclude name="**" />

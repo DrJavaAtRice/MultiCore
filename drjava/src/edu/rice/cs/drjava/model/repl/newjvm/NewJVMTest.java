@@ -47,8 +47,6 @@ import junit.extensions.TestSetup;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-import java.io.StringWriter;
-import java.io.PrintWriter;
 import java.rmi.RemoteException;
 
 import static edu.rice.cs.plt.debug.DebugUtil.debug;
@@ -172,6 +170,7 @@ public final class NewJVMTest extends DrJavaTestCase {
 
   /** Ensure that MainJVM can correctly switch the active interpreter used by
    * the interpreter JVM.
+   * @throws InterruptedException if execution was interrupted unexpectedly
    */
   public void testSwitchActiveInterpreter() throws InterruptedException {
     debug.logStart();

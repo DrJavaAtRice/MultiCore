@@ -131,19 +131,26 @@ public class ConcJUnitUtils {
     if (!isValidRTConcJUnitFile(f)) return false;
     try {
       JarFile jf = new JarFile(f);
-      Manifest mf = jf.getManifest();
-      if (mf==null) return false;
-      String vendor = mf.getMainAttributes().getValue("Edu-Rice-Cs-CUnit-JavaVersion-Vendor");
-      String version = mf.getMainAttributes().getValue("Edu-Rice-Cs-CUnit-JavaVersion");
-      if ((vendor==null) || (version==null)) return false;
-      return (vendor.equals(edu.rice.cs.plt.reflect.JavaVersion.CURRENT_FULL.vendor().toString()) &&
-              version.equals(edu.rice.cs.plt.reflect.JavaVersion.CURRENT_FULL.toString()));
+      try {
+        Manifest mf = jf.getManifest();
+        if (mf==null) return false;
+        String vendor = mf.getMainAttributes().getValue("Edu-Rice-Cs-CUnit-JavaVersion-Vendor");
+        String version = mf.getMainAttributes().getValue("Edu-Rice-Cs-CUnit-JavaVersion");
+        if ((vendor==null) || (version==null)) return false;
+        return (vendor.equals(edu.rice.cs.plt.reflect.JavaVersion.CURRENT_FULL.vendor().toString()) &&
+            version.equals(edu.rice.cs.plt.reflect.JavaVersion.CURRENT_FULL.toString()));
+      }
+      finally {
+        jf.close();
+      }
     }
     catch(IOException ioe) { return false; }
   }
   
   /** Ask the user if the rt.concjunit.jar file should be regenerated.
     * @param parentFrame parent frame
+    * @param yesRunnable runnable to run if the user selects yes
+    * @param noRunnable runnable to run if the user selects no
     * @return true if the user chose to regenerate
     */
   public static boolean showIncompatibleWantToRegenerateDialog(final Frame parentFrame,
@@ -344,8 +351,7 @@ public class ConcJUnitUtils {
       JVMBuilder jvmb = new JVMBuilder(tmpDir).classPath(concJUnitJarFile);
       Process p = jvmb.start("edu.rice.cs.cunit.concJUnit.ConcJUnitFileInstrumentorLauncher", "-r");
       BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      String line;
-      while((line = br.readLine()) != null) { /* just read and discard any output */ }
+      while((br.readLine()) != null) { /* just read and discard any output */ }
       try {
         p.waitFor();
       }

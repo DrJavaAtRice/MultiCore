@@ -37,8 +37,8 @@
 package edu.rice.cs.drjava.ui.config;
 
 import javax.swing.*;
-import java.awt.*;
 
+import java.awt.*;
 import java.io.Serializable;
 import java.util.Vector;
 
@@ -64,7 +64,7 @@ public abstract class OptionComponent<T,C extends JComponent> implements Seriali
     _option = option;
     _labelText = labelText;
     _label = new JLabel(_labelText);
-    _label.setHorizontalAlignment(JLabel.RIGHT);
+    _label.setHorizontalAlignment(SwingConstants.RIGHT);
     _parent = parent;
     if (option != null) {
       DrJava.getConfig().addOptionListener(option, new OptionListener<T>() {
@@ -87,7 +87,7 @@ public abstract class OptionComponent<T,C extends JComponent> implements Seriali
   
   public boolean useEntireColumn() { return _entireColumn; }
   
-  /** Returns the JComponent to display for this OptionComponent. */
+  /** @return the JComponent to display for this OptionComponent. */
   public C getComponent() { return _guiComponent; }
   
   /** Set the JComponent to display for this OptionComponent.
@@ -109,13 +109,16 @@ public abstract class OptionComponent<T,C extends JComponent> implements Seriali
    */
   public abstract void setDescription(String description);
 
-  /** Whether the component should occupy the entire column. */
+  /** 
+   * @param entireColumn whether the component should occupy the entire column.
+   * @return this
+   */
   public OptionComponent<T,C> setEntireColumn(boolean entireColumn) { 
     _entireColumn = entireColumn; 
     return this; 
   }
 
-  /** Whether the component should occupy the entire column. */
+  /** @return whether the component should occupy the entire column. */
   public boolean getEntireColumn() { return _entireColumn; }
   
   /** Updates the appropriate configuration option with the new value if different from the old one and legal. Any 
@@ -138,7 +141,10 @@ public abstract class OptionComponent<T,C extends JComponent> implements Seriali
     }
   }
   
-  /** Sets the value that is currently displayed by this component. */
+  /** 
+   * Sets the value that is currently displayed by this component. 
+   * @param value the value to set
+   */
   public abstract void setValue(T value);
   
   public void showErrorMessage(String title, OptionParseException e) { showErrorMessage(title, e.value, e.message); }

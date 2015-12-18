@@ -64,8 +64,6 @@ import edu.rice.cs.drjava.DrJava;
 
 import static edu.rice.cs.util.XMLConfig.XMLConfigException;
 
-import edu.rice.cs.plt.text.TextUtil;
-
 /** This parser loads XML configuration files using the XMLConfig class in the util package.
  * 
  *  <p> If at some point new information is to be stored in the project file, the following places in the code that need to
@@ -73,7 +71,7 @@ import edu.rice.cs.plt.text.TextUtil;
  *  store the new info.  <li> The interface for the DocumentInfoGetter should be expanded to allow for the new
  *  data to be retrieved.  <li> Add a new clause to the else-if ladder in the FilePropertyVisitor.  <li> 
  *  Add the new information to the DocFile form the DocumentInfoGetter in the ProjectFileBuilder's 
- *  addSourceDocument method.</p>
+ *  addSourceDocument method.</menu>
  * 
  *  <p> If the change is at the top level, you must modify the evaluateExpression method in this parser and add the 
  *  corresponding methods to the ProjectFileIR, ProjectFileIRImpl, and ProjectFileBuilder</p>
@@ -380,7 +378,7 @@ public class XMLProjectFileParser extends ProjectFileParserFacade {
     return rList;
   }
   
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings({ "unchecked", "rawtypes" })
   protected Map<OptionParser<?>,String> readStoredPreferences() {
     HashMap<OptionParser<?>,String> storedPreferences = new HashMap<OptionParser<?>,String>();
     List<Node> prefs = _xc.getNodes("preferences/preference");

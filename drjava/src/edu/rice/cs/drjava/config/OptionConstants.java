@@ -51,7 +51,6 @@ import javax.swing.UIManager;
 import javax.swing.UIManager.LookAndFeelInfo;
 
 import edu.rice.cs.drjava.platform.PlatformFactory;
-import edu.rice.cs.plt.reflect.JavaVersion;
 import edu.rice.cs.util.FileOps;
 
 import static java.awt.Event.*;
@@ -72,7 +71,7 @@ public interface OptionConstants {
   /** A String used to launch a user's preferred browser. It is tokenized and appended to the file path. */
   public static final StringOption BROWSER_STRING = new StringOption("browser.string", "");
   
-  /** A Vector<String> storing the classes to automatically import. */
+  /** A {@code Vector<String>} storing the classes to automatically import. */
   public static final VectorOption<String> INTERACTIONS_AUTO_IMPORT_CLASSES =
     new VectorOption<String>("interactions.auto.import.classes", new StringOption("",""), new Vector<String>());
   
@@ -255,7 +254,7 @@ public interface OptionConstants {
   /** List of open documents */
   public static final FontOption FONT_DOCLIST = new FontOption("font.doclist", DefaultFont.getDefaultDocListFont());
   
-  /** Toolbar buttons */
+  /** ToolBar buttons */
   public static final FontOption FONT_TOOLBAR = new FontOption("font.toolbar", Font.decode("dialog-10"));
   
   /** Whether to draw anti-aliased text.  (Slightly slower.) */
@@ -306,7 +305,7 @@ public interface OptionConstants {
     
     private static boolean _registered = false;
     
-    /** Return the look-and-feel class name to use by default */
+    /** @return the look-and-feel class name to use by default */
     public static String getDefaultLookAndFeel() {
       if (PlatformFactory.ONLY.isMacPlatform())
         return UIManager.getSystemLookAndFeelClassName(); // Mac: Let the system decide.
@@ -1164,6 +1163,10 @@ public interface OptionConstants {
   public static final VectorOption<KeyStroke> KEY_NEW_DRJAVA_INSTANCE= 
     new VectorOption<KeyStroke>("key.new.drjava.instance", new KeyStrokeOption("",null),
                                 to.vector(KeyStroke.getKeyStroke(KeyEvent.VK_F1, CTRL_MASK|SHIFT_MASK)));
+
+  /** The key binding for starting a new code coverage frame. */
+  public static final VectorOption<KeyStroke> KEY_CODE_COVERAGE = 
+    new VectorOption<KeyStroke>("key.code.coverage", new KeyStrokeOption("",null), to.vector());
   
   /* ---------- Find Replace Options ---------- */
   
@@ -1244,29 +1247,22 @@ public interface OptionConstants {
   
   /** Possible options for Javadoc system class documentation links. */
   static final String JAVADOC_NONE_TEXT = "none";
-  static final String JAVADOC_1_3_TEXT = "1.3";
-  static final String JAVADOC_1_4_TEXT = "1.4";
-  static final String JAVADOC_1_5_TEXT = "1.5";
+  static final String JAVADOC_1_3_TEXT = "1.3";  // deprecated
+  static final String JAVADOC_1_4_TEXT = "1.4";  // deprecated
+  static final String JAVADOC_1_5_TEXT = "1.5";  // deprecated
   static final String JAVADOC_1_6_TEXT = "1.6";
   static final String JAVADOC_1_7_TEXT = "1.7";
   static final String JAVADOC_1_8_TEXT = "1.8";
   static final String JAVADOC_AUTO_TEXT = "use compiler version"; // for "Open Java API Javadoc"
   
   static final String[] linkChoices = new String[]{
-    JAVADOC_NONE_TEXT, JAVADOC_1_5_TEXT, JAVADOC_1_6_TEXT, JAVADOC_1_7_TEXT, JAVADOC_1_8_TEXT };
+    JAVADOC_NONE_TEXT, JAVADOC_1_6_TEXT, JAVADOC_1_7_TEXT, JAVADOC_1_8_TEXT };
   static final ArrayList<String> linkVersionChoices = new ArrayList<String>(Arrays.asList(linkChoices));
 
   static final String[] linkDeprecated = new String[]{
     JAVADOC_1_3_TEXT, JAVADOC_1_4_TEXT, JAVADOC_1_5_TEXT };
   static final ArrayList<String> linkVersionDeprecated = new ArrayList<String>(Arrays.asList(linkDeprecated));  
   
-  /** Constants for the URLs of Sun's system class documentation for different versions of Java. */
-  public static final StringOption JAVADOC_1_3_LINK =
-    new StringOption("javadoc.1.3.link", "http://download.oracle.com/javase/1.3/docs/api");
-  public static final StringOption JAVADOC_1_4_LINK =
-    new StringOption("javadoc.1.4.link", "http://download.oracle.com/javase/1.4.2/docs/api");
-  public static final StringOption JAVADOC_1_5_LINK =
-    new StringOption("javadoc.1.5.link", "http://download.oracle.com/javase/1.5.0/docs/api");
   public static final StringOption JAVADOC_1_6_LINK =
     new StringOption("javadoc.1.6.link", "http://download.oracle.com/javase/6/docs/api");
   public static final StringOption JAVADOC_1_7_LINK =
@@ -1277,14 +1273,13 @@ public interface OptionConstants {
   /** The version of Java to use for links to Javadoc for system classes. */
   public static final ForcedChoiceOption JAVADOC_LINK_VERSION =
     new ForcedChoiceOption("javadoc.link.version",
-                           (System.getProperty("java.specification.version").startsWith("1.5") ? JAVADOC_1_5_TEXT : 
-                              (System.getProperty("java.specification.version").startsWith("1.6") ? JAVADOC_1_6_TEXT : 
-                                 (System.getProperty("java.specification.version").startsWith("1.7") ? JAVADOC_1_7_TEXT : 
-                                    JAVADOC_1_8_TEXT))),
+                           (System.getProperty("java.specification.version").startsWith("1.6") ? JAVADOC_1_6_TEXT : 
+                              (System.getProperty("java.specification.version").startsWith("1.7") ? JAVADOC_1_7_TEXT : 
+                                 JAVADOC_1_8_TEXT)),
                            linkVersionChoices, linkVersionDeprecated);
   
   static final String[] apiJavadocChoices = new String[] {
-    JAVADOC_1_5_TEXT, JAVADOC_1_6_TEXT, JAVADOC_1_7_TEXT, JAVADOC_1_8_TEXT, JAVADOC_AUTO_TEXT};
+    JAVADOC_1_6_TEXT, JAVADOC_1_7_TEXT, JAVADOC_1_8_TEXT, JAVADOC_AUTO_TEXT};
   
   static final ArrayList<String> apiJavadocVersionChoices = new ArrayList<String>(Arrays.asList(apiJavadocChoices));
 
@@ -1386,7 +1381,7 @@ public interface OptionConstants {
   /** Whether to warn that a restart is necessary before the default compiler preference will change. */
   public static final BooleanOption WARN_CHANGE_DCP = new BooleanOption("warn.change.dcp", Boolean.TRUE);
 
-  /** Whether to prompt to change the language level extensions (.dj0/.dj1->.dj, .dj2->.java). */
+  /** Whether to prompt to change the language level extensions {@literal (.dj0/.dj1->.dj, .dj2->.java)}. */
   public static final BooleanOption PROMPT_RENAME_LL_FILES = new BooleanOption("prompt.rename.ll.files", Boolean.TRUE);
   
   /* ---------- MISC OPTIONS ---------- */

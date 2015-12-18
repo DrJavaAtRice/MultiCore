@@ -64,7 +64,13 @@ public class JPDABreakpoint extends DocumentDebugAction<BreakpointRequest> imple
   /** Note that _position, which records the breakpoint position, is inherited from DocumentDebugAction. */
   private volatile OpenDefinitionsDocument _doc;
   
-  /** @throws DebugException if the document does not have a file */
+  /** 
+   * @param doc the document within which to create the breakpoint
+   * @param offset offset within the document at which to set the breakpoint
+   * @param isEnabled true if the breakpoint is enabled; false for disabled
+   * @param manager manager
+   * @throws DebugException if the document does not have a file 
+   */
   public JPDABreakpoint(OpenDefinitionsDocument doc, int offset, boolean isEnabled, JPDADebugger manager)
     throws DebugException {
     
@@ -196,8 +202,15 @@ public class JPDABreakpoint extends DocumentDebugAction<BreakpointRequest> imple
     return getDocument() == r.getDocument() && getStartOffset() == r.getStartOffset() && getEndOffset() == r.getEndOffset();
   }
   
+  /** A trivial override of hashCode to satisfy javac, which complains if hashCode is not overridden.
+    * WARNING: This overriding leaves the hashCode function unchanged making it inconsisent with equality.  Hence, 
+    * only Identity based hash tables should use this type as keys. Since this class is mutable, there is NO overriding
+    * of hashCode that will work for conventional (equals-based) hash tables.*/
+  @Override
+  public final int hashCode() { return super.hashCode(); }
+  
   /** Totally orders regions lexicographically based on (_doc, endOffset, startOffset). This method is typically applied
-    * to regions within the same document. 
+    * to regions within the same document. It is consistent with equals.
     */
   public int compareTo(OrderedDocumentRegion r) {
     int docRel = getDocument().compareTo(r.getDocument());

@@ -42,7 +42,6 @@ import java.io.*;
 import java.util.zip.*;
 import java.util.*;
 import javax.swing.*;
-import javax.swing.event.*;
 import javax.swing.border.EmptyBorder;
 
 import edu.rice.cs.util.*;
@@ -85,7 +84,10 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
   /** List with additional sources. */
   private VectorFileOptionComponent _sourcesList;
   
-  /** Constructs a frame to generate a custom drjava.jar. */
+  /** 
+   * Constructs a frame to generate a custom drjava.jar. 
+   * @param mf reference to the main frame
+   */
   public GenerateCustomDrJavaJarFrame(MainFrame mf) {
     super("Generate Custom drjava.jar File");
 
@@ -251,7 +253,6 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
             sb.setLength(0);
             new Thread() {
               public void run() {
-                boolean result = true;
                 try {
                   final ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(jarOut));
                   final Runnable noRunnable = new Runnable() {
@@ -319,9 +320,11 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
     }.start();
   }
 
-  /** Ask if the user wants to generate the file anyway.
-    * @return true if the user wants to generate.
-    */
+  /** 
+   * Ask if the user wants to generate the file anyway.
+   * @param text custom text to display
+   * @return true if the user wants to generate.
+   */
   public boolean askGenerateAnyway(String text) {
     final boolean[] result = new boolean[] { false };
     new DrJavaScrollableDialog(this,
@@ -433,6 +436,7 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
    * @param zos ZipOutputStream (or null if not wanted)
    * @param processFile a predicate returning true if the file should be processed
    * @return false if there was a conflict
+   * @throws IOException if an IO operation fails
    */
   public boolean addDirectory(File f,
                               MD5ChecksumProperties p,
@@ -486,6 +490,7 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
    * @param zos ZipOutputStream (or null if not wanted)
    * @param processFile a predicate returning true if the file should be processed
    * @return false if there was a conflict
+   * @throws IOException if an IO operation fails
    */
   public boolean addZipFile(File f,
                             MD5ChecksumProperties p,
@@ -528,6 +533,7 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
         }
       }
     }
+    zf.close();
     return result;
   }
   
@@ -690,8 +696,11 @@ public class GenerateCustomDrJavaJarFrame extends SwingFrame {
     super.setVisible(vis);
   }
   
-  /** Add an updated options.properties file to the ZIP file.
-    * @param zos output stream for the ZIP file */
+  /** 
+   * Add an updated options.properties file to the ZIP file.
+   * @param zos output stream for the ZIP file
+   * @throws IOException if an IO operation fails
+   */
   public void addOptionsPropertiesFile(ZipOutputStream zos) throws IOException {
     Properties optionsProperties = new Properties();
     ResourceBundle bundle = ResourceBundle .getBundle(edu.rice.cs.drjava.DrJava.RESOURCE_BUNDLE_NAME);

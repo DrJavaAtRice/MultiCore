@@ -45,7 +45,7 @@ import java.net.MalformedURLException;
 
 /**
  * The frame for displaying the HTML help files.
- * @version $Id$
+ * @version $Id: HelpFrame.java 5175 2010-01-20 08:46:32Z mgricken $
  */
 public class HelpFrame extends HTMLFrame {
   private static final String HELP_PATH =  "/edu/rice/cs/drjava/docs/user/";
@@ -59,7 +59,12 @@ public class HelpFrame extends HTMLFrame {
     addHyperlinkListener(_linkListener);
   }
   
-  /** Used by subclass QuickStartFrame to instantiate fields of frame.
+  /** 
+   * Used by subclass QuickStartFrame to instantiate fields of frame.
+   * @param frameName name of the frame
+   * @param introUrl intro URL
+   * @param indexUrl index URL
+   * @param iconString icon string
    */
   public HelpFrame(String frameName, URL introUrl, URL indexUrl, String iconString) {
     super(frameName, introUrl, indexUrl, iconString);

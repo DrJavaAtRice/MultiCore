@@ -41,7 +41,6 @@ import edu.rice.cs.plt.concurrent.ConcurrentUtil;
 import java.rmi.*;
 
 import static edu.rice.cs.plt.debug.DebugUtil.error;
-import static edu.rice.cs.plt.debug.DebugUtil.debug;
 
 /** A partial implementation of a {@link SlaveRemote} that provides the quit functionality and that also periodically 
   * checks if the master is still alive and automatically quits if not.
@@ -81,10 +80,14 @@ public abstract class AbstractSlaveJVM implements SlaveRemote {
     }.start();
   }
   
-  /** Initializes the Slave JVM including starting background thread to periodically poll the master JVM and 
-    * automatically quit if it's dead.  Synchronized to prevent other method invocations from proceeding before
-    * startup is complete.
-    */
+  /** 
+   * Initializes the Slave JVM including starting background thread to 
+   * periodically poll the master JVM and automatically quit if it's dead.  
+   * Synchronized to prevent other method invocations from proceeding before
+   * startup is complete.
+   * @param master link to the master JVM
+   * @throws RemoteException if communication over RMI fails
+   */
   public final synchronized void start(final MasterRemote master) throws RemoteException {
     if (_started) { throw new IllegalArgumentException("start() has already been invoked"); }
     master.checkStillAlive(); // verify that two-way communication works; may throw RemoteException
@@ -111,7 +114,10 @@ public abstract class AbstractSlaveJVM implements SlaveRemote {
   /** This method is called just before the JVM is quit.  It can be overridden to provide cleanup code, etc. */
   protected void beforeQuit() { }
   
-  /** Called when the slave JVM has started running.  Subclasses must implement this method. */
+  /** 
+   * Called when the slave JVM has started running.  Subclasses must implement this method. 
+   * @param master link to the master JVM
+   */
   protected abstract void handleStart(MasterRemote master);
   
 }

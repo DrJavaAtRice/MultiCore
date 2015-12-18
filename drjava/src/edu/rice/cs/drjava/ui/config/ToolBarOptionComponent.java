@@ -53,7 +53,7 @@ import edu.rice.cs.util.swing.SwingFrame;
  * their setting.
  * @version $Id$
  */
-public class ToolbarOptionComponent extends OptionComponent<Boolean,JComponent> {
+public class ToolBarOptionComponent extends OptionComponent<Boolean,JComponent> {
 
   private JRadioButton _noneButton;
   private JRadioButton _textButton;
@@ -74,7 +74,7 @@ public class ToolbarOptionComponent extends OptionComponent<Boolean,JComponent> 
    * @param title the title for this panel
    * @param parent the parent frame
    */
-  public ToolbarOptionComponent(String title, SwingFrame parent) {
+  public ToolBarOptionComponent(String title, SwingFrame parent) {
     super(title, parent);
 
     _noneButton = new JRadioButton(NONE);
@@ -133,8 +133,13 @@ public class ToolbarOptionComponent extends OptionComponent<Boolean,JComponent> 
     setComponent(_buttonPanel);
   }
 
-  /** Constructor that allows for a tooltip description. */
-  public ToolbarOptionComponent(String title, SwingFrame parent, String description) {
+  /** 
+   * Constructor that allows for a tooltip description. 
+   * @param title title
+   * @param parent the parent frame
+   * @param description tooltip text
+   */
+  public ToolBarOptionComponent(String title, SwingFrame parent, String description) {
     this(title, parent);
     setDescription(description);
   }
@@ -165,10 +170,12 @@ public class ToolbarOptionComponent extends OptionComponent<Boolean,JComponent> 
                  OptionConstants.TOOLBAR_ENABLED.getDefault().booleanValue());
   }
 
-  /** Selects the radio button corresponding to the specified configuration.
-    * @param textEnabled Whether toolbar text is enabled
-    * @param iconsEnabled Whether toolbar icons are enabled
-    */
+  /** 
+   * Selects the radio button corresponding to the specified configuration.
+   * @param textEnabled Whether toolbar text is enabled
+   * @param iconsEnabled Whether toolbar icons are enabled
+   * @param isEnabled Whether the button is enabled
+   */
   private void _setSelected(boolean textEnabled, boolean iconsEnabled, boolean isEnabled) {
     if (! isEnabled) { _noneButton.setSelected(true); }
     else if (textEnabled && iconsEnabled) { _textAndIconsButton.setSelected(true); }

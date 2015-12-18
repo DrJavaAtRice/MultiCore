@@ -42,7 +42,6 @@ import edu.rice.cs.plt.concurrent.ConcurrentUtil;
 import edu.rice.cs.plt.concurrent.JVMBuilder;
 import edu.rice.cs.plt.lambda.Runnable1;
 import edu.rice.cs.plt.lambda.LambdaUtil;
-import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.util.jar.JarBuilder;
 import edu.rice.cs.util.jar.ManifestWriter;
 import edu.rice.cs.util.swing.FileChooser;
@@ -53,7 +52,6 @@ import edu.rice.cs.util.swing.SwingWorker;
 import edu.rice.cs.util.swing.Utilities;
 import edu.rice.cs.util.swing.ProcessingDialog;
 import edu.rice.cs.util.swing.ScrollableListDialog;
-import edu.rice.cs.util.StreamRedirectThread;
 import edu.rice.cs.util.FileOps;
 
 import javax.swing.*;
@@ -61,6 +59,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.filechooser.FileFilter;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.WindowEvent;
@@ -484,7 +483,7 @@ public class JarOptionsDialog extends SwingFrame {
       }
     });
     
-    editDialog.setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+    editDialog.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
     editDialog.addWindowListener(new WindowAdapter(){
       public void WindowClosed(WindowEvent e){
         manifest.setText(_customManifestText);
@@ -622,13 +621,19 @@ public class JarOptionsDialog extends SwingFrame {
     return _jarFileSelector;
   }
   
-  /** Modifies state for when the executable check box is selected */
+  /** 
+   * Modifies state for when the executable check box is selected 
+   * @param b value to be set
+   */
   private void _setEnableExecutable(boolean b) {
     _makeExecutable.setEnabled(b);
     _toggleMainClass();
   }
   
-  /** Enables/Disables the custom manifest checkbox */
+  /** 
+   * Enables/Disables the custom manifest checkbox 
+   * @param b value to be set
+   */
   private void _setEnableCustomManifest(boolean b) {
     _customManifest.setEnabled(b);
     _toggleCustomManifest();
@@ -1012,7 +1017,10 @@ public class JarOptionsDialog extends SwingFrame {
     worker.start();
   }
   
-  /** Save the settings for this dialog. */
+  /** 
+   * Save the settings for this dialog. 
+   * @return true always
+   */
   private boolean _saveSettings() {
     _lastState = new FrameState(this);
     if ((_model.getCreateJarFile() == null) ||

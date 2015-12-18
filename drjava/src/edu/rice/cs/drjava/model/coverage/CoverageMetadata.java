@@ -34,40 +34,25 @@
  * 
  * END_COPYRIGHT_BLOCK*/
 
-package edu.rice.cs.util.sexp;
+package edu.rice.cs.drjava.model.coverage;
 
-public class TextAtom implements Atom {
-  protected String _text;
-  
-  public TextAtom(String text) { _text = text; }
-  
-  public String getText() { return _text; }
-  
-  /** Visitor hook for the TextAtom
-   * @param v the visitor
-   * @return result of the given algorithm
-   */
-  public <Ret> Ret accept(SExpVisitor<Ret> v){
-    return v.forTextAtom(this);
-  }
-  
-  /** If the given text was a quoted string, the text returned
-   * excludes the quotes around the string.
-   * @return the text that went into making this atom.
-   */
-  public String toString() { return _text; }  
-}
+import java.io.Serializable;
 
-/** This type of text atom is mostly like its super class
-  * except its string representation includes the sourrounding 
-  * quotes and the instances of the characters: \ " etc are turned
-  * into their corresponding escape character sequences.
-  */
-class QuotedTextAtom extends TextAtom {
-  
-  public QuotedTextAtom(String text) { super(text); }
-  
-  public String toString() { 
-    return edu.rice.cs.util.StringOps.convertToLiteral(_text);
-  }
+public class CoverageMetadata implements Serializable {
+
+    private boolean doCoverage;
+    private String outputDirectory;
+
+    public CoverageMetadata(boolean doCoverage, String outputDirectory) {
+        this.doCoverage = doCoverage;
+        this.outputDirectory = outputDirectory;  
+    }
+
+    public boolean getFlag() {
+        return this.doCoverage;
+    }
+
+    public String getOutdirPath() {
+        return this.outputDirectory;
+    }
 }

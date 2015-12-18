@@ -47,7 +47,10 @@ public class ConfigProperty extends EagerProperty {
   /** True if this is a list of values. This allows the sep="..." attribute. */
   protected boolean _isList = false;
   
-  /** Create a configuration property. */
+  /** 
+   * Create a configuration property. 
+   * @param name the name of the property
+   */
   public ConfigProperty(String name) {
     super(name, "Help not available.");
     resetAttributes();
@@ -62,8 +65,7 @@ public class ConfigProperty extends EagerProperty {
       String value = om.getString(op);
       if (_name.equals("config." + key)) {
         if (op instanceof VectorOption<?>) {
-          @SuppressWarnings("unchecked")
-          Vector<?> vec = ((VectorOption)op).parse(value);
+          Vector<?> vec = ((VectorOption<?>)op).parse(value);
           StringBuilder sb = new StringBuilder();
           for(Object o: vec) {
             sb.append(_attributes.get("sep"));

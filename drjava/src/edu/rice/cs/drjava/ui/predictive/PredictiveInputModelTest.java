@@ -1097,13 +1097,13 @@ public class PredictiveInputModelTest extends DrJavaTestCase {
   // What about Java 6, 7, 8?
   public void testJavaAPIFragmentLineNumStrategy() {
     final String base = edu.rice.cs.drjava.DrJava.
-      getConfig().getSetting(edu.rice.cs.drjava.config.OptionConstants.JAVADOC_1_5_LINK) + "/";
-    final String stripPrefix = ""; // nothing needs to be stripped, links in 1.4 Javadoc are relative
-    final String suffix = "/allclasses-1.5.html";
+      getConfig().getSetting(edu.rice.cs.drjava.config.OptionConstants.JAVADOC_LINK_VERSION) + "/";
+    System.err.println("*** base = " + base);
+    final String stripPrefix = ""; // nothing needs to be stripped
+    final String suffix = "/allclasses-1.8.html";
     Set<edu.rice.cs.drjava.ui.MainFrameStatics.JavaAPIListEntry> l = 
-      edu.rice.cs.drjava.ui.MainFrame._generateJavaAPISet(base,
-                                                          stripPrefix,
-                                                          suffix);
+      edu.rice.cs.drjava.ui.MainFrame._generateJavaAPISet(suffix);
+    System.err.println("JavaAPIList = " + l);
     assertTrue(l.size() > 0);
   }
 }

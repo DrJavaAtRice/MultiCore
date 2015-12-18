@@ -37,28 +37,16 @@
 package edu.rice.cs.drjava.ui;
 
 import edu.rice.cs.drjava.DrJava;
-import edu.rice.cs.drjava.config.OptionConstants;
-import edu.rice.cs.drjava.model.MultiThreadedTestCase;
 import edu.rice.cs.drjava.model.*;
 import edu.rice.cs.drjava.model.definitions.DefinitionsDocument;
-import edu.rice.cs.util.Log;
 import edu.rice.cs.util.swing.Utilities;
 import edu.rice.cs.util.FileOps;
-import static edu.rice.cs.drjava.model.GlobalModelTestCase.FileSelector;
 
-import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Vector;
-import java.util.Date;
-
 import java.lang.ref.WeakReference;
+
 import static org.netbeans.test.MemoryTestUtils.*;
 
 /** Tests the Definitions Pane
@@ -97,6 +85,7 @@ public final class DefinitionsPaneMemoryLeakTest extends MultiThreadedTestCase {
     super.tearDown();
   }
   
+  @SuppressWarnings("unused")
   private volatile DefinitionsDocument preventFinalization;
 
   private volatile int _finalPaneCt;
@@ -206,7 +195,8 @@ public final class DefinitionsPaneMemoryLeakTest extends MultiThreadedTestCase {
   }
     
   
-  public void testDocumentPaneMemoryLeak() throws InterruptedException, IOException {
+  @SuppressWarnings("unused")
+public void testDocumentPaneMemoryLeak() throws InterruptedException, IOException {
     println("---- testDocumentPaneMemoryLeak ----");
 
     // _model has been setUp
@@ -286,7 +276,12 @@ public final class DefinitionsPaneMemoryLeakTest extends MultiThreadedTestCase {
   
   public static final edu.rice.cs.util.Log LOG = new edu.rice.cs.util.Log("heap.log",false);
   
-  /** Dumps the current heap to a file. */
+  /** 
+   * Dumps the current heap to a file. 
+   * @return the newly-created file
+   * @throws IOException if an IO operation fails
+   * @throws InterruptedException if execution is interrupted unexpectedly
+   */
   public static File dumpHeap() throws IOException, InterruptedException {
     String javaHome = System.getenv("JAVA_HOME");
     char SEP = File.separatorChar;
@@ -345,7 +340,10 @@ public final class DefinitionsPaneMemoryLeakTest extends MultiThreadedTestCase {
     return newDump;
   }
   
-  /** @return the identity hash code in hex. */
+  /** 
+   * @param o object for which to get the hash code
+   * @return the identity hash code in hex. 
+   */
   public static String hexIdentityHashCode(Object o) {
     return Integer.toHexString(System.identityHashCode(o));
   }

@@ -52,7 +52,6 @@ import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.util.swing.Utilities;
 
 import java.awt.EventQueue;
-import java.awt.Toolkit;
 import java.io.*;
 import java.util.List;
 
@@ -77,7 +76,10 @@ public final class ProjectMenuTest extends DrJavaTestCase {
   
   private volatile String _projFileText = null;
   
-  /** Invokes setUp() in MultiThreadedTestCase.  Accessible from anonymous inner classes. */
+  /** 
+   * Invokes setUp() in MultiThreadedTestCase.  Accessible from anonymous inner classes. 
+   * @throws Exception if something goes wrong
+   */
   private void superSetUp() throws Exception { super.setUp(); }
   
   /** Setup method for each JUnit test case in this Test class.

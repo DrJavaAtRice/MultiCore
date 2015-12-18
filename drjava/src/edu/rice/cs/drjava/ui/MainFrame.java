@@ -41,17 +41,16 @@ import javax.swing.border.*;
 import javax.swing.event.*;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.text.*;
+
 import java.awt.event.*;
 import java.awt.*;
 import java.awt.print.*;
 import java.awt.dnd.*;
 import java.beans.*;
-
 import java.io.*;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -76,7 +75,6 @@ import edu.rice.cs.drjava.DrJavaRoot;
 import edu.rice.cs.drjava.RemoteControlClient;
 import edu.rice.cs.drjava.RemoteControlServer;
 import edu.rice.cs.drjava.platform.*;
-import edu.rice.cs.drjava.config.FileConfiguration;
 import edu.rice.cs.drjava.config.*;
 import edu.rice.cs.drjava.model.*;
 import edu.rice.cs.drjava.model.compiler.CompilerListener;
@@ -84,27 +82,27 @@ import edu.rice.cs.drjava.model.compiler.CompilerModel;
 import edu.rice.cs.drjava.model.definitions.ClassNameNotFoundException;
 import edu.rice.cs.drjava.model.definitions.DefinitionsDocument;
 import edu.rice.cs.drjava.model.definitions.DocumentUIListener;
+
+import edu.rice.cs.drjava.model.compiler.DummyCompilerListener;
 import edu.rice.cs.drjava.model.definitions.InvalidPackageException;
 import edu.rice.cs.drjava.model.definitions.NoSuchDocumentException;
 import edu.rice.cs.drjava.model.debug.*;
 import edu.rice.cs.drjava.model.repl.*;
 import edu.rice.cs.drjava.model.javadoc.JavadocModel;
 import edu.rice.cs.drjava.ui.config.ConfigFrame;
+import edu.rice.cs.drjava.ui.coverage.CoverageFrame;
 import edu.rice.cs.drjava.ui.predictive.PredictiveInputFrame;
 import edu.rice.cs.drjava.ui.predictive.PredictiveInputModel;
 import edu.rice.cs.drjava.ui.avail.*;
 import edu.rice.cs.drjava.ui.ClipboardHistoryFrame;
 import edu.rice.cs.drjava.ui.RegionsTreePanel;
 import edu.rice.cs.drjava.project.*;
-
 import edu.rice.cs.plt.concurrent.JVMBuilder;
 import edu.rice.cs.plt.io.IOUtil;
 import edu.rice.cs.plt.iter.IterUtil;
-import edu.rice.cs.plt.lambda.DelayedThunk;
 import edu.rice.cs.plt.lambda.*;
 import edu.rice.cs.plt.reflect.JavaVersion;
 import edu.rice.cs.plt.tuple.Pair;
-
 import edu.rice.cs.util.classloader.ClassFileError;
 import edu.rice.cs.util.docnavigation.*;
 import edu.rice.cs.drjava.model.FileMovedException;
@@ -115,18 +113,17 @@ import edu.rice.cs.util.OperationCanceledException;
 import edu.rice.cs.util.StringOps;
 import edu.rice.cs.util.swing.Utilities;
 import edu.rice.cs.util.swing.*;
-import edu.rice.cs.util.swing.ProcessingDialog;
 import edu.rice.cs.util.text.ConsoleDocument;
 import edu.rice.cs.util.text.SwingDocument;
 import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.util.XMLConfig;
-
 import static edu.rice.cs.drjava.config.OptionConstants.KEY_NEW_CLASS_FILE;
 import static edu.rice.cs.drjava.ui.RecentFileManager.*;
 import static edu.rice.cs.drjava.ui.predictive.PredictiveInputModel.*;
 import static edu.rice.cs.util.XMLConfig.XMLConfigException;
-import static edu.rice.cs.plt.object.ObjectUtil.hash;
 import static edu.rice.cs.drjava.ui.MainFrameStatics.*;
+
+import edu.rice.cs.drjava.model.junit.JUnitResultTuple;
 
 /** DrJava's main window. */
 public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetListener {
@@ -219,6 +216,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   private volatile JButton _runButton;
   private volatile JButton _junitButton;
   private volatile JButton _errorsButton;
+  private volatile JButton _coverageButton;
   
   private final JToolBar _toolBar = new JToolBar();
   private final JFileChooser _interactionsHistoryChooser = new JFileChooser();
@@ -245,6 +243,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   private final QuickStartFrame _quickStartFrame = new QuickStartFrame();
   private volatile AboutDialog _aboutDialog;
   private volatile RecentDocFrame _recentDocFrame;    /** Holds/shows the history of documents for ctrl-tab. */
+  private volatile CoverageFrame _coverageFrame;
   
 //  private ProjectPropertiesFrame _projectPropertiesFrame;
   
@@ -307,7 +306,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   
   /** For saving files. We have a persistent dialog to keep track of the last directory from which we saved. */
   private volatile JFileChooser _saveChooser;
-  
+
   /** Filter for drjava project files (.drjava and .xml and .pjt) */
   private final javax.swing.filechooser.FileFilter _projectFilter = new javax.swing.filechooser.FileFilter() {
     public boolean accept(File f) {
@@ -385,7 +384,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   };
 
-  /** @return possibly renamed file, if it used an old LL extension and the user wanted it. */
+  /** 
+   * @param f the file to possibly rename
+   * @return possibly renamed file, if it used an old LL extension and the user wanted it. 
+   */
   private File proposeBetterFileName(File f) {
     if (DrJavaFileUtils.isOldLLFile(f) && DrJava.getConfig().getSetting(PROMPT_RENAME_LL_FILES)) {
       File newFile = DrJavaFileUtils.getNewLLForOldLLFile(f);
@@ -736,7 +738,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     public final void actionPerformed(ActionEvent ae) { _save(); }
   };
   
-  /** Returns the changed status of the MainFrame. */
+  /** @return the changed status of the MainFrame. */
   public long getLastChangeTime() { return _lastChangeTime; }
   
   /** Ensures that pack() is run in the event thread. Only used in test code */
@@ -747,7 +749,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   /** Helper method that provides access to super.pack() within the anonymous class new Runnable() {...} above */
   private void packHelp() { super.pack(); }
   
-  /** Supports MainFrameTest.*/
+  /** @return true if save is enabled; false otherwise */
   public boolean isSaveEnabled() { return _saveAction.isEnabled(); }
   
   /** Asks the user for a file name and saves the active document (in the definitions pane) to that file. */
@@ -1034,6 +1036,97 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       catch (IOException ioe) { MainFrameStatics.showIOError(MainFrame.this, ioe); }
     }
   };
+
+  public void compileBeforeCodeCoverage(final CompilerListener coverageAfterCompile) {
+
+   //right now using the compile before junit setting
+   if (DrJava.getConfig().getSetting(ALWAYS_COMPILE_BEFORE_JUNIT).booleanValue() || Utilities.TEST_MODE) {
+     // Compile all open source files
+     _model.getCompilerModel().addListener(coverageAfterCompile);  // listener removes itself
+     _compileAll();
+   }
+   else { // pop up a window to ask if all open files should be compiled before testing        
+     final JButton yesButton = new JButton(new AbstractAction("Yes") {
+       public void actionPerformed(ActionEvent e) {
+         // compile all open source files and test
+         _model.getCompilerModel().addListener(coverageAfterCompile);  // listener removes itself
+         _compileAll();
+       }
+     });
+     final JButton noButton = new JButton(new AbstractAction("No") {
+       public void actionPerformed(ActionEvent e) {
+         //abort
+       }
+     });
+     ScrollableListDialog<OpenDefinitionsDocument> dialog = 
+       new ScrollableListDialog.Builder<OpenDefinitionsDocument>()
+       .setOwner(MainFrame.this)
+       .setTitle("Must Compile All Source Files to Run Code Coverage")
+       .setText("<html>Before you can run code coverage, you must first compile all out of sync source files.<br>"+
+                "Would you like to compile all files and run the code coverage tool?")
+       .setItems(_model.getOutOfSyncDocuments())
+       .setMessageType(JOptionPane.QUESTION_MESSAGE)
+       .setFitToScreen(true)
+       .clearButtons()
+       .addButton(yesButton)
+       .addButton(noButton)
+       .build();
+     
+     dialog.showDialog();
+   }
+ }
+  
+  
+  /** Show the coverage report dialogue */
+  private volatile AbstractAction _coverageAction = new AbstractAction("Code Coverage") {
+    {}// _addGUIAvailabilityListener(this,                                             // init
+                                 //GUIAvailabilityListener.ComponentType.INTERACTIONS);}
+    public void actionPerformed(ActionEvent ae) {
+      
+    if (!_model.hasOutOfSyncDocuments()) {  
+      showCoverageFrame();    
+    }
+    else {
+      
+      CompilerListener coverage = new DummyCompilerListener() {
+              @Override public void compileAborted(Exception e) {
+            // gets called if there are modified files and the user chooses NOT to save the files
+            // see bug report 2582488: Hangs If Testing Modified File, But Choose "No" for Saving
+            final CompilerListener listenerThis = this;
+             _model.getCompilerModel().removeListener(listenerThis); 
+            }
+          
+          @Override public void compileEnded(File workDir, List<? extends File> excludedFiles) {
+            final CompilerListener listenerThis = this;
+            try {
+              if (_model.hasOutOfSyncDocuments() || _model.getNumCompilerErrors() > 0) {
+                return;
+              }
+              EventQueue.invokeLater(new Runnable() {  // defer running this code; would prefer to waitForInterpreter
+                public void run() { showCoverageFrame();}
+              });
+            }
+            finally {  // always remove this listener after its first execution
+              EventQueue.invokeLater(new Runnable() { 
+                public void run() { _model.getCompilerModel().removeListener(listenerThis); }
+              });
+            }
+          }
+        
+    
+    }; //end coverage listener
+    
+    compileBeforeCodeCoverage(coverage);
+    
+    } //end else
+  }
+  };
+
+  public void showCoverageFrame() {   
+    _coverageFrame.setOutputDir(_model.getWorkingDirectory());
+    _coverageFrame.setVisible(true);
+    _coverageFrame.toFront(); 
+  }
   
   /** Default cut action.  Returns focus to the correct pane. */
   final Action cutAction = new DefaultEditorKit.CutAction() {
@@ -1243,7 +1336,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     public void actionPerformed(ActionEvent ae) { _selectAll(); }
   };
   
-  /** Shows the find/replace tab in the interactions pane.  Only executes in the event thread. */
+  /** 
+   * Shows the find/replace tab in the interactions pane.  Only executes in the event thread. 
+   * @param showDetachedWindow whether or not to show detached window
+   */
   private void _showFindReplaceTab(boolean showDetachedWindow) {
     if (_mainSplit.getDividerLocation() > _mainSplit.getMaximumDividerLocation()) 
       _mainSplit.resetToPreferredSizes(); 
@@ -1650,16 +1746,24 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Generate Java API class list. */
-  public static Set<JavaAPIListEntry> _generateJavaAPISet(String base, String stripPrefix, String suffix) {
-    URL url = MainFrame.class.getResource("/edu/rice/cs/drjava/docs/javaapi"+suffix);
-    return _generateJavaAPISet(base, stripPrefix, url);
+  /** 
+   * Generate Java API class list. 
+   * @param suffix the suffix to append to the API path
+   * @return the Java API class list
+   */
+  public static Set<JavaAPIListEntry> _generateJavaAPISet(String suffix) {
+    URL url = MainFrame.class.getResource("/edu/rice/cs/drjava/docs/javaapi" + suffix);
+    return _generateJavaAPISet(url);
   }
   
-  /** Generate Java API class list. */
-  public static Set<JavaAPIListEntry> _generateJavaAPISet(String base, String stripPrefix, URL url) {
+  /** 
+   * Generate Java API class list. 
+   * @param url the URL from which to generate the class list
+   * @return the Java API class list
+   */
+  public static Set<JavaAPIListEntry> _generateJavaAPISet(URL url) {
     Set<JavaAPIListEntry> s = new HashSet<JavaAPIListEntry>();
-    if (url==null) return s;
+    if (url == null) return s;
     try {
       InputStream urls = url.openStream();
       InputStreamReader is = null;
@@ -1668,21 +1772,26 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
         is = new InputStreamReader(urls);
         br = new BufferedReader(is);
         String line = br.readLine();
-        while(line != null) {
+        while (line != null) {
           final String aText = "<a href=\"";
           int aPos = line.toLowerCase().indexOf(aText);
           int aEndPos = line.toLowerCase().indexOf(".html\" ",aPos);
-          if ((aPos>=0) && (aEndPos>=0)) {
-            String link = line.substring(aPos+aText.length(), aEndPos);
-            String fullClassName = link.substring(stripPrefix.length()).replace('/', '.');
+          if ((aPos >= 0) && (aEndPos >= 0)) {
+            String link = line.substring(aPos + aText.length(), aEndPos);
+            String fullClassName = link.replace('/', '.');
             String simpleClassName = fullClassName;
+            System.err.println("link = '" + link + "'; simpleClassName = '" + simpleClassName + "'");
             int lastDot = fullClassName.lastIndexOf('.');
-            if (lastDot>=0) { simpleClassName = fullClassName.substring(lastDot + 1); }
+            if (lastDot >= 0) { simpleClassName = fullClassName.substring(lastDot + 1); }
             try {
-              URL pageURL = new URL(base + link + ".html");
+              URL pageURL = new URL(link + ".html");
+              System.err.println("URL is: " + pageURL);
               s.add(new JavaAPIListEntry(simpleClassName, fullClassName, pageURL));
             }
-            catch(MalformedURLException mue) { /* ignore, we'll just not put this class in the list */ }
+            catch(MalformedURLException mue) { 
+              System.err.println("MalformedURLException on " + link + ".html");
+            /* ignore, we'll just not put this class in the list */ 
+            }
           }
           line = br.readLine();
         }
@@ -1735,29 +1844,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       if (linkVersion.equals(JAVADOC_AUTO_TEXT)) {
         // use the compiler's version of the Java API Javadoc
         JavaVersion ver = _model.getCompilerModel().getActiveCompiler().version();
-        if (ver == JavaVersion.JAVA_1_4) linkVersion = JAVADOC_1_4_TEXT;
-        else if (ver == JavaVersion.JAVA_5) linkVersion = JAVADOC_1_5_TEXT;
-        else if (ver == JavaVersion.JAVA_6) linkVersion = JAVADOC_1_6_TEXT;
+        if (ver == JavaVersion.JAVA_6) linkVersion = JAVADOC_1_6_TEXT;
         else if (ver == JavaVersion.JAVA_7) linkVersion = JAVADOC_1_7_TEXT;
         else if (ver == JavaVersion.JAVA_8) linkVersion = JAVADOC_1_8_TEXT;
         else linkVersion = JAVADOC_1_7_TEXT;   // default
       }
-      if (linkVersion.equals(JAVADOC_1_3_TEXT)) {
-        base = DrJava.getConfig().getSetting(JAVADOC_1_3_LINK) + "/";
-        stripPrefix = ""; // nothing needs to be stripped, links in 1.3 Javadoc are relative
-        suffix = "/allclasses-1.3.html";
-      }
-      else if (linkVersion.equals(JAVADOC_1_4_TEXT)) {
-        base = DrJava.getConfig().getSetting(JAVADOC_1_4_LINK) + "/";
-        stripPrefix = ""; // nothing needs to be stripped, links in 1.4 Javadoc are relative
-        suffix = "/allclasses-1.4.html";
-      }
-      else if (linkVersion.equals(JAVADOC_1_5_TEXT)) {
-        base = DrJava.getConfig().getSetting(JAVADOC_1_5_LINK) + "/";
-        stripPrefix = ""; // nothing needs to be stripped, links in 1.5 Javadoc are relative
-        suffix = "/allclasses-1.5.html";
-      }
-      else if (linkVersion.equals(JAVADOC_1_6_TEXT)) {
+      if (linkVersion.equals(JAVADOC_1_6_TEXT)) {
         // at one point, the links in the 1.6 Javadoc were absolute, and this is how we dealt with that
         // base = ""; // links in 1.6 Javadoc are absolute, so nothing needs to be added to get an absolute URL
         // // but we do need to strip the absolute part to get correct fully-qualified class names
@@ -1769,34 +1861,30 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
         suffix = "/allclasses-1.6.html";
       }
       else if (linkVersion.equals(JAVADOC_1_7_TEXT)) {
-        base = DrJava.getConfig().getSetting(JAVADOC_1_7_LINK) + "/";
-        stripPrefix = ""; // nothing needs to be stripped, links in 1.7 Javadoc are relative
+//        base = DrJava.getConfig().getSetting(JAVADOC_1_7_LINK) + "/";
+//        stripPrefix = ""; // nothing needs to be stripped, links in 1.7 Javadoc are relative
         suffix = "/allclasses-1.7.html";
       }
       else if (linkVersion.equals(JAVADOC_1_8_TEXT)) {
-        base = DrJava.getConfig().getSetting(JAVADOC_1_8_LINK) + "/";
-        stripPrefix = ""; // nothing needs to be stripped, links in 1.8 Javadoc are relative
+//        base = DrJava.getConfig().getSetting(JAVADOC_1_8_LINK) + "/";
+//        stripPrefix = ""; // nothing needs to be stripped, links in 1.8 Javadoc are relative
         suffix = "/allclasses-1.8.html";
       }
       if (!suffix.equals("")) {
-        _javaAPISet.addAll(_generateJavaAPISet(base, stripPrefix, suffix));
+        _javaAPISet.addAll(_generateJavaAPISet(suffix));
       }
       else {
         // no valid Javadoc URL
       }
       
       // add JUnit
-      Set<JavaAPIListEntry> junitAPIList = _generateJavaAPISet(DrJava.getConfig().getSetting(JUNIT_LINK) + "/",
-                                                               "", // relative links
-                                                               "/allclasses-concjunit4.7.html");
+      Set<JavaAPIListEntry> junitAPIList = _generateJavaAPISet("/allclasses-concjunit4.7.html");
       _javaAPISet.addAll(junitAPIList);
       
       // add additional Javadoc libraries
       for(String url: DrJava.getConfig().getSetting(JAVADOC_ADDITIONAL_LINKS)) {
         try {
-          Set<JavaAPIListEntry> additionalList = _generateJavaAPISet(url + "/",
-                                                                     "", // relative links
-                                                                     new URL(url+"/allclasses-frame.html"));
+          Set<JavaAPIListEntry> additionalList = _generateJavaAPISet(new URL(url+"/allclasses-frame.html"));
           _javaAPISet.addAll(additionalList);
         }
         catch(MalformedURLException mue) { /* ignore, we'll just not put this class in the list */ }
@@ -2079,7 +2167,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   };
   
-  /** Saves a copy of either the console or the interactions pane to a file. */
+  /** 
+   * Saves a copy of either the console or the interactions pane to a file. 
+   * @param doc the document to be saved
+   */
   public void _saveConsoleCopy(ConsoleDocument doc) {
     _saveChooser.resetChoosableFileFilters();
     _saveChooser.setFileFilter(_txtFileFilter);    
@@ -2118,7 +2209,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Saves a copy of an error pane to a file. */
+  /** 
+   * Saves a copy of an error pane to a file. 
+   * @param doc the document to be saved
+   */
   public void _saveDocumentCopy(final SwingDocument doc) {
     assert EventQueue.isDispatchThread();
     
@@ -2303,8 +2397,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   private final Action _newDrJavaInstanceAction = new AbstractAction("New DrJava Instance...") {
     public void actionPerformed(ActionEvent ae) {
       try {
-        Process p = JVMBuilder.DEFAULT.classPath(FileOps.getDrJavaFile()).
-          start(DrJava.class.getName(), "-new");
+        JVMBuilder.DEFAULT.classPath(FileOps.getDrJavaFile()).start(DrJava.class.getName(), "-new");
       }
       catch(IOException ioe) { MainFrameStatics.showIOError(MainFrame.this, ioe); }
     }
@@ -2622,18 +2715,26 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   
   /** Add the current location to the browser history. */
   public void addToBrowserHistory() { _model.addToBrowserHistory(); }
+
   /** Add the current location to the browser history before the current region. */
   public void addToBrowserHistoryBefore() { _model.addToBrowserHistory(true); }
   
-  /** Create a new find results tab.
-    * @param rm the region manager that will contain the regions
-    * @param title the title for the panel
-    * @return new find results tab.
-    * @param searchString string that was searched for
-    * @param searchAll whether all files were searched
-    * @param doc weak reference to document in which search occurred (or started, if all documents were searched)
-    * @param findReplace the FindReplacePanel that created this FindResultsPanel
-    */
+  /** 
+   * Create a new find results tab.
+   * @param rm the region manager that will contain the regions
+   * @param region a MovingDocumentRegion
+   * @param title the title for the panel
+   * @param searchString string that was searched for
+   * @param searchAll whether all files were searched
+   * @param searchSelectionOnly whether only the selected file was searched
+   * @param matchCase whether matches must be case-sensitive
+   * @param wholeWord whether matches must be against the whole word
+   * @param noComments whether comments should be ignored
+   * @param noTestCases whether test cases should be ignored
+   * @param doc weak reference to document in which search occurred (or started, if all documents were searched)
+   * @param findReplace the FindReplacePanel that created this FindResultsPanel
+   * @return new find results tab.
+   */
   public FindResultsPanel createFindResultsPanel(final RegionManager<MovingDocumentRegion> rm,
                                                  MovingDocumentRegion region, String title,
                                                  String searchString, boolean searchAll, boolean searchSelectionOnly, 
@@ -2689,7 +2790,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return panel;
   }
   
-  /** Disable "Find Again" on "Find All" tabs that use a document that was closed. */
+  /** 
+   * Disable "Find Again" on "Find All" tabs that use a document that was closed. 
+   * @param projDocs a list of project documents
+   */
   void disableFindAgainOnClose(List<OpenDefinitionsDocument> projDocs) {
     for(TabbedPanel t: _tabs) {
       if (t instanceof FindResultsPanel) {
@@ -2699,7 +2803,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Action that shows a find results tab. Only runs in event thread. */
+  /** 
+   * Action that shows a find results tab. Only runs in event thread. 
+   * @param panel the panel to be displayed
+   */
   public void showFindResultsPanel(final FindResultsPanel panel) {
     assert EventQueue.isDispatchThread();
     if (_mainSplit.getDividerLocation() > _mainSplit.getMaximumDividerLocation()) _mainSplit.resetToPreferredSizes(); 
@@ -2758,10 +2865,14 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   };
   
-  /** Returns the "intelligent" beginning of line.  If the caret is to fhe right of the first non-whitespace character,
-    * the position of the first non-whitespace character is returned.  If the caret is on or to the left of the first 
-    * non-whitespace character, the beginning of the line is returned.
-    */
+  /** 
+   * Returns the "intelligent" beginning of line.  If the caret is to fhe 
+   * right of the first non-whitespace character, the position of the first 
+   * non-whitespace character is returned.  If the caret is on or to the left 
+   * of the first non-whitespace character, the beginning of the line is 
+   * returned.
+   * @return the intelligent beginning of the line
+   */
   private int _getBeginLinePos() {
     try {
       int currPos = _currentDefPane.getCaretPosition();
@@ -3033,11 +3144,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
 //    private Icon _juFail;
     private final FileDisplayManager _default;
     
-    /** Standard constructor.
-      * @param star The star icon will be put flush to the left 1/4 the way down
-      * @param junitPass indicator of junit success, placed at bottom right
-      * @param junitFail indicator of junit failure, placed at bottom right
-      */
+    /** 
+     * Standard constructor.
+     * @param fdm the FileDisplayManager
+     * @param star The star icon will be put flush to the left 1/4 the way down
+     * @param junitPass indicator of junit success, placed at bottom right
+     * @param junitFail indicator of junit failure, placed at bottom right
+     */
     public OddDisplayManager(FileDisplayManager fdm, Icon star, Icon junitPass, Icon junitFail) {
       _star = star;
 //      _juPass = junitPass;
@@ -3342,16 +3455,15 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       
       // initialize menu bar and actions
       _setUpActions();
-      _setUpMenuBar(_menuBar,
-                    _fileMenu, _editMenu, _toolsMenu, _projectMenu, _debugMenu, _languageLevelMenu, _helpMenu);
+      _setUpMenuBar(_menuBar, _fileMenu, _editMenu, _toolsMenu, _projectMenu, _debugMenu, _languageLevelMenu, _helpMenu);
       setJMenuBar(_menuBar);
       
       //    _setUpDocumentSelector();
       _setUpContextMenus();
       
       // Create toolbar and buttons
-      _undoButton = _createManualToolbarButton(_undoAction);
-      _redoButton = _createManualToolbarButton(_redoAction);
+      _undoButton = _createManualToolBarButton(_undoAction);
+      _redoButton = _createManualToolBarButton(_redoAction);
       
       // initialize _toolBar
       _setUpToolBar();
@@ -3495,10 +3607,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       config.addOptionListener(FONT_MAIN, new MainFontOptionListener());
       config.addOptionListener(FONT_LINE_NUMBERS, new LineNumbersFontOptionListener());
       config.addOptionListener(FONT_DOCLIST, new DoclistFontOptionListener());
-      config.addOptionListener(FONT_TOOLBAR, new ToolbarFontOptionListener());
-      config.addOptionListener(TOOLBAR_ICONS_ENABLED, new ToolbarOptionListener());
-      config.addOptionListener(TOOLBAR_TEXT_ENABLED, new ToolbarOptionListener());
-      config.addOptionListener(TOOLBAR_ENABLED, new ToolbarOptionListener());
+      config.addOptionListener(FONT_TOOLBAR, new ToolBarFontOptionListener());
+      config.addOptionListener(TOOLBAR_ICONS_ENABLED, new ToolBarOptionListener());
+      config.addOptionListener(TOOLBAR_TEXT_ENABLED, new ToolBarOptionListener());
+      config.addOptionListener(TOOLBAR_ENABLED, new ToolBarOptionListener());
       config.addOptionListener(LINEENUM_ENABLED, new LineEnumOptionListener());
       config.addOptionListener(DEFINITIONS_LINE_NUMBER_COLOR, new LineEnumColorOptionListener());
       config.addOptionListener(DEFINITIONS_LINE_NUMBER_BACKGROUND_COLOR, new LineEnumColorOptionListener());
@@ -3530,36 +3642,36 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       DrJava.getConfig().addOptionListener(JAVADOC_API_REF_VERSION, choiceOptionListener);
       
       // The OptionListener for JAVADOC_XXX_LINK.
-      OptionListener<String> link13OptionListener = new OptionListener<String>() {
-        public void optionChanged(OptionEvent<String> oce) {
-          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
-          if (linkVersion.equals(JAVADOC_1_3_TEXT) ||
-              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
-            clearJavaAPISet();
-          }
-        }
-      };
-      DrJava.getConfig().addOptionListener(JAVADOC_1_3_LINK, link13OptionListener);
-      OptionListener<String> link14OptionListener = new OptionListener<String>() {
-        public void optionChanged(OptionEvent<String> oce) {
-          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
-          if (linkVersion.equals(JAVADOC_1_4_TEXT) ||
-              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
-            clearJavaAPISet();
-          }
-        }
-      };
-      DrJava.getConfig().addOptionListener(JAVADOC_1_4_LINK, link14OptionListener);
-      OptionListener<String> link15OptionListener = new OptionListener<String>() {
-        public void optionChanged(OptionEvent<String> oce) {
-          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
-          if (linkVersion.equals(JAVADOC_1_5_TEXT) ||
-              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
-            clearJavaAPISet();
-          }
-        }
-      };
-      DrJava.getConfig().addOptionListener(JAVADOC_1_5_LINK, link15OptionListener);
+//      OptionListener<String> link13OptionListener = new OptionListener<String>() {
+//        public void optionChanged(OptionEvent<String> oce) {
+//          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
+//          if (linkVersion.equals(JAVADOC_1_3_TEXT) ||
+//              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
+//            clearJavaAPISet();
+//          }
+//        }
+//      };
+//      DrJava.getConfig().addOptionListener(JAVADOC_1_3_LINK, link13OptionListener);
+//      OptionListener<String> link14OptionListener = new OptionListener<String>() {
+//        public void optionChanged(OptionEvent<String> oce) {
+//          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
+//          if (linkVersion.equals(JAVADOC_1_4_TEXT) ||
+//              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
+//            clearJavaAPISet();
+//          }
+//        }
+//      };
+//      DrJava.getConfig().addOptionListener(JAVADOC_1_4_LINK, link14OptionListener);
+//      OptionListener<String> link15OptionListener = new OptionListener<String>() {
+//        public void optionChanged(OptionEvent<String> oce) {
+//          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
+//          if (linkVersion.equals(JAVADOC_1_5_TEXT) ||
+//              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
+//            clearJavaAPISet();
+//          }
+//        }
+//      };
+//      DrJava.getConfig().addOptionListener(JAVADOC_1_5_LINK, link15OptionListener);
       
       OptionListener<String> link16OptionListener = new OptionListener<String>() {
         public void optionChanged(OptionEvent<String> oce) {
@@ -3570,6 +3682,27 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
           }
         }
       };
+      
+      OptionListener<String> link17OptionListener = new OptionListener<String>() {
+        public void optionChanged(OptionEvent<String> oce) {
+          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
+          if (linkVersion.equals(JAVADOC_1_7_TEXT) ||
+              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
+            clearJavaAPISet();
+          }
+        }
+      };
+      
+      OptionListener<String> link18OptionListener = new OptionListener<String>() {
+        public void optionChanged(OptionEvent<String> oce) {
+          String linkVersion = DrJava.getConfig().getSetting(JAVADOC_API_REF_VERSION);
+          if (linkVersion.equals(JAVADOC_1_8_TEXT) ||
+              linkVersion.equals(JAVADOC_AUTO_TEXT)) {
+            clearJavaAPISet();
+          }
+        }
+      };
+      
       
       OptionListener<String> link17OptionListener = new OptionListener<String>() {
         public void optionChanged(OptionEvent<String> oce) {
@@ -3617,6 +3750,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       
       // Initialize cached frames and dialogs 
       _configFrame = new ConfigFrame(MainFrame.this);
+      _coverageFrame = new CoverageFrame(MainFrame.this);
       _aboutDialog = new AboutDialog(MainFrame.this);
       _interactionsScriptController = null;
       _executeExternalDialog = new ExecuteExternalDialog(MainFrame.this);
@@ -4251,7 +4385,11 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Set new painter for existing find results highlights. */
+  /** 
+   * Set new painter for existing find results highlights. 
+   * @param panel the panel to be refreshed
+   * @param painter the painter being used to highlight the panel
+   */
   void refreshFindResultsHighlightPainter(FindResultsPanel panel, LayeredHighlighter.LayerPainter painter) {
     for(Pair<FindResultsPanel, Map<MovingDocumentRegion, HighlightManager.HighlightInfo>> pair: _findResults) {
       if (pair.first() == panel) {
@@ -4261,7 +4399,11 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Creates the folder chooser during MainFrame initialization which does not run in event thread. */
+  /** 
+   * Creates the folder chooser during MainFrame initialization which does not run in event thread. 
+   * @param workDir the working directory
+   * @return the newly-created DirectoryChooser
+   */
   private DirectoryChooser makeFolderChooser(final File workDir) {
     assert duringInit() || EventQueue.isDispatchThread();
     final DirectoryChooser dc = new DirectoryChooser(this);
@@ -4286,10 +4428,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   /** @return The model providing the logic for this view. */
   public SingleDisplayModel getModel() { return _model; }
   
-  /** Returns the frame's interactions pane.  (Package private accessor) */
+  /** @return the frame's interactions pane.  (Package private accessor) */
   InteractionsPane getInteractionsPane() { return _interactionsPane; }
   
-  /** Returns the frame's interactions controller. (Package private accessor) */
+  /** @return the frame's interactions controller. (Package private accessor) */
   InteractionsController getInteractionsController() { return _interactionsController; }
   
   /** @return The frame's close button (Package private accessor). */
@@ -4409,7 +4551,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _lastFocusOwner.requestFocusInWindow();
   }
   
-  /** ONLY executes in event thread. */
+  /** 
+   * ONLY executes in event thread. 
+   * @param text the text to be set
+   */
   public void updateStatusField(String text) {
     assert EventQueue.isDispatchThread();
     _statusField.setText(text);
@@ -4444,17 +4589,25 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Prompt the user to select a place to open files from, then load them. Ask the user if they'd like to save 
-    * previous changes (if the current document has been modified) before opening.
-    * @param jfc the open dialog from which to extract information
-    * @return an array of the files that were chosen
-    */
+  /** 
+   * Prompt the user to select a place to open files from, then load them. 
+   * Ask the user if they'd like to save previous changes (if the current 
+   * document has been modified) before opening.
+   * @param jfc the open dialog from which to extract information
+   * @return an array of the files that were chosen
+   * @throws OperationCanceledException if an operation was canceled unexpectedly
+   */
   public File[] getOpenFiles(JFileChooser jfc) throws OperationCanceledException {
     int rc = jfc.showOpenDialog(this);
     return getChosenFiles(jfc, rc);
   }
   
-  /** Prompt the user to select a place to save the current document. */
+  /** 
+   * Prompt the user to select a place to save the current document.
+   * @param jfc the open dialog from which to extract information
+   * @return the file that was chosen
+   * @throws OperationCanceledException if an operation was canceled unexpectedly
+   */
   public File getSaveFile(JFileChooser jfc) throws OperationCanceledException {
     // This redundant-looking hack is necessary for JDK 1.3.1 on Mac OS X!
 //    File selection = jfc.getSelectedFile();//_saveChooser.getSelectedFile();
@@ -4492,43 +4645,45 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return getChosenFile(jfc, rc, previous, true);
   }
   
-  /** Returns the current DefinitionsPane. */
+  /** @return the current DefinitionsPane. */
   public DefinitionsPane getCurrentDefPane() { return _currentDefPane; }
   
-  /** Returns the compiler error panel. */
+  /** @return the compiler error panel. */
   public CompilerErrorPanel getCompilerErrorPanel() { return _compilerErrorPanel; }
   
-  /** Returns the JUnit error panel. */
+  /** @return the JUnit error panel. */
   public JUnitPanel getJUnitPanel() { return _junitPanel; }
   
-  /** Returns the javadoc error panel. */
+  /** @return the javadoc error panel. */
   public JavadocErrorPanel getJavadocErrorPanel() { return _javadocErrorPanel; }
   
-  /** Returns the currently shown error panel if there is one. Otherwise returns null. */
+  /** @return the currently shown error panel if there is one. Otherwise returns null. */
   public CompilerErrorPanel getSelectedErrorPanel() {
     Component c = _tabbedPane.getSelectedComponent();
     if (c instanceof CompilerErrorPanel) return (CompilerErrorPanel) c;
     return null;
   }
   
-  /** Returns whether the compiler output tab is currently showing. */
+  /** @return whether the compiler output tab is currently showing. */
   public boolean isCompilerTabSelected() {
     return _tabbedPane.getSelectedComponent() == _compilerErrorPanel;
   }
   
-  /** Returns whether the test output tab is currently showing. */
+  /** @return whether the test output tab is currently showing. */
   public boolean isTestTabSelected() {
     return _tabbedPane.getSelectedComponent() == _junitPanel;
   }
   
-  /** Returns whether the JavaDoc output tab is currently showing. */
+  /** @return whether the JavaDoc output tab is currently showing. */
   public boolean isJavadocTabSelected() {
     return _tabbedPane.getSelectedComponent() == _javadocErrorPanel;
   }
   
-  /** Makes sure save and compile buttons and menu items are enabled and disabled appropriately after document
-    * modifications.
-    */
+  /** 
+   * Makes sure save and compile buttons and menu items are enabled and 
+   * disabled appropriately after document modifications.
+   * @param d the document in which to install the listener
+   */
   private void _installNewDocumentListener(final OpenDefinitionsDocument d) {
     d.addDocumentListener(new DocumentUIListener() {
       public void changedUpdate(DocumentEvent e) {  }
@@ -4565,7 +4720,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     */
   public void setStatusMessageColor(Color c) { _statusReport.setForeground(c); }
   
-  /** Performs op on each document in docs and invalidates the various project file collection properties. */
+  /** 
+   * Performs op on each document in docs and invalidates the various project 
+   * file collection properties. 
+   * @param docs the documents to be processed
+   * @param op the operation to run on each doc
+   */
   private void _processDocs(Collection<OpenDefinitionsDocument> docs, Runnable1<OpenDefinitionsDocument> op) {
     for (OpenDefinitionsDocument doc: docs) {
       if (doc != null && ! doc.isUntitled()) {
@@ -4582,7 +4742,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     PropertyMaps.TEMPLATE.getProperty("DrJava","drjava.external.files").invalidate();
   }
   
-  /* Converts the selected files to auxiliary files.  Access is ackage protected rather than private to support access
+  /** Converts the selected files to auxiliary files.  Access is ackage protected rather than private to support access
    * by ProjectMenuTest.testSaveProject. 
    */
   void _moveToAuxiliary() {
@@ -4644,7 +4804,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     catch(OperationCanceledException oce) { /* do nothing */ }
   }
   
-  /** Puts the given text into the current definitions pane at the current caret position.  */
+  /** 
+   * Puts the given text into the current definitions pane at the current caret position.  
+   * @param text text to put into the pane
+   */
   private void _putTextIntoDefinitions(String text) {
     int caretPos = _currentDefPane.getCaretPosition();
     
@@ -4723,8 +4886,8 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   }
   
   private void _setUpProjectButtons(File projectFile) {
-    _compileButton = _updateToolbarButton(_compileButton, _compileProjectAction);
-    _junitButton = _updateToolbarButton(_junitButton, _junitProjectAction);
+    _compileButton = _updateToolBarButton(_compileButton, _compileProjectAction);
+    _junitButton = _updateToolBarButton(_junitButton, _junitProjectAction);
     _recentProjectManager.updateOpenFiles(projectFile);
   }
   
@@ -4881,7 +5044,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     int result = chooser.showDialog(openDir);
     File dir = chooser.getSelectedDirectory();    
     chooser.removeChoosableFileFilter(ff);
-    if (result != DirectoryChooser.APPROVE_OPTION)  return; // canceled or error
+    if (result != JFileChooser.APPROVE_OPTION)  return; // canceled or error
     
     boolean rec = _openRecursiveCheckBox.isSelected();
     DrJava.getConfig().setSetting(OptionConstants.OPEN_FOLDER_RECURSIVE, Boolean.valueOf(rec));
@@ -5292,11 +5455,15 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
     return map;
   }
-  /** Gets the information to be saved for a project document.
-    * Implementation may change if the scroll/selection information is later stored in a place other than the
-    * definitions pane.  Hopefully this info will eventually be backed up in the OpenDefinitionsDocument in which 
-    * case all this code should be refactored into the model's _saveProject method
-    */
+  /** 
+   * Gets the information to be saved for a project document.
+   * Implementation may change if the scroll/selection information is later 
+   * stored in a place other than the definitions pane.  Hopefully this info 
+   * will eventually be backed up in the OpenDefinitionsDocument in which 
+   * case all this code should be refactored into the model's _saveProject method
+   * @param doc the document for which to create the info getter
+   * @return the information to be saved for a project document
+   */
   private DocumentInfoGetter _makeInfoGetter(final OpenDefinitionsDocument doc) {
     JScrollPane s = _defScrollPanes.get(doc);
     if (s == null) s = _createDefScrollPane(doc);
@@ -5772,7 +5939,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   }
   
   /** Tests all open documents. */
-  private void _junitAll() {
+  public void _junitAll() {
     updateStatusField("Running All Open Unit Tests");
     hourglassOn();  // turned off in junitStarted/nonTestCase/_junitInterrupted
     _guiAvailabilityNotifier.junitStarted(); // JUNIT and COMPILER
@@ -5789,7 +5956,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
 //      _model.getDebugger().suspend();
 //  }
   
-  /** Resumes the debugger's current execution. */
+  /** 
+   * Resumes the debugger's current execution. 
+   * @throws DebugException if an error occurs during debugging
+   */
   void debuggerResume() throws DebugException {
     if (isDebuggerReady()) {
       _model.getDebugger().resume();
@@ -5848,7 +6018,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     if (_automaticTraceTimer != null) _automaticTraceTimer.stop();
   }
   
-  /** Steps in the debugger. */
+  /** 
+   * Steps in the debugger. 
+   * @param type the type of step to take
+   */
   void debuggerStep(Debugger.StepType type) {
     if (isDebuggerReady()) {
       try { _model.getDebugger().step(type); }
@@ -6112,8 +6285,11 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   
   private void _selectAll() { _currentDefPane.selectAll(); }
   
-  /** Jump to the specified line and return the offset.  Only runs in event thread.
-    * @return offset */
+  /** 
+   * Jump to the specified line and return the offset.  Only runs in event thread.
+   * @param lineNum line to jump to
+   * @return offset 
+   */
   public int _jumpToLine(int lineNum) {   
     int pos = _model.getActiveDocument().gotoLine(lineNum);
     addToBrowserHistory();
@@ -6122,7 +6298,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return pos;
   }
   
-  /** Ask the user what line they'd like to jump to, then go there. */
+  /** 
+   * Ask the user what line they'd like to jump to, then go there. 
+   * @return offset; -1 on failure
+   */
   private int _gotoLine() {
     final String msg = "What line would you like to go to?";
     final String title = "Go to Line";
@@ -6141,9 +6320,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return -1;
   }
   
-  /** Removes the ErrorCaretListener corresponding to the given document, after that document has been closed.
-    * (Allows pane and listener to be garbage collected...)
-    */
+  /** 
+   * Removes the ErrorCaretListener corresponding to the given document, after 
+   * that document has been closed.
+   * (Allows pane and listener to be garbage collected...)
+   * @param doc the document from which to remove the listener
+   */
   private void _removeErrorListener(OpenDefinitionsDocument doc) {
     JScrollPane scroll = _defScrollPanes.get(doc);
     if (scroll != null) {
@@ -6313,6 +6495,9 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     
     _setUpAction(_junitAction, "Test Current", "Run JUnit over the current document");
     _setUpAction(_junitAllAction, "Test", "Run JUnit over all open JUnit tests");
+
+    _setUpAction(_coverageAction, "Code Coverage", "Generate code coverage reports");
+
     if (_model.getJavadocModel().isAvailable()) {
       _setUpAction(_javadocAllAction, "Javadoc", "Create and save Javadoc for the packages of all open documents");
       _setUpAction(_javadocCurrentAction, "Preview Javadoc Current", "Preview the Javadoc for the current document");
@@ -6425,9 +6610,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _recentProjectManager.removeMirroredMenu(projectMenu);
   }
     
-  /** Sets up the components of the menu bar and links them to the private fields within MainFrame.  This method 
-    * serves to make the code more legible on the higher calling level, i.e., the constructor.
-    */
+  /** 
+   * Sets up the components of the menu bar and links them to the private 
+   * fields within MainFrame.  This method serves to make the code more 
+   * legible on the higher calling level, i.e., the constructor.
+   * @param menuBar menu bar to set up
+   */
   void _setUpMenuBar(JMenuBar menuBar) {
     int mask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMask();
     _setUpMenuBar(menuBar,
@@ -6436,19 +6624,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
                   _setUpLanguageLevelMenu(mask, false), _setUpHelpMenu(mask, false));
   }
 
-  void _setUpMenuBar(JMenuBar menuBar,
-                     JMenu fileMenu,
-                     JMenu editMenu,
-                     JMenu toolsMenu,
-                     JMenu projectMenu,
-                     JMenu debugMenu,
-                     JMenu languageLevelMenu,
-                     JMenu helpMenu) {
+  void _setUpMenuBar(JMenuBar menuBar, JMenu fileMenu, JMenu editMenu, JMenu toolsMenu, JMenu projectMenu, 
+                     JMenu debugMenu, JMenu languageLevelMenu, JMenu helpMenu) {
     menuBar.add(fileMenu);
     menuBar.add(editMenu);
     menuBar.add(toolsMenu);
     menuBar.add(projectMenu);
-    if (_showDebugger && (debugMenu!=null)) menuBar.add(debugMenu);
+    if (_showDebugger && (debugMenu != null)) menuBar.add(debugMenu);
     menuBar.add(languageLevelMenu);
     menuBar.add(helpMenu);
     // Plastic-specific style hints
@@ -6507,9 +6689,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Creates and returns a file menu.  Side effects: sets values for _saveMenuItem.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
+  /** 
+   * Creates and returns a file menu.  Side effects: sets values for _saveMenuItem.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return the newly-setup file menu
     */
   private JMenu _setUpFileMenu(int mask, boolean updateKeyboardManager) {
     JMenu fileMenu = new JMenu("File");
@@ -6554,10 +6739,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return fileMenu;
   }
   
-  /** Creates and returns a edit menu.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns a edit menu.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
+   * @return the newly-setup edit menu
+   */
   private JMenu _setUpEditMenu(int mask, boolean updateKeyboardManager) {
     JMenu editMenu = new JMenu("Edit");
     PlatformFactory.ONLY.setMnemonic(editMenu,KeyEvent.VK_E);
@@ -6667,10 +6854,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return editMenu;
   }
   
-  /** Creates and returns a tools menu.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns a tools menu.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return newly-created tools menu
+   */
   private JMenu _setUpToolsMenu(int mask, boolean updateKeyboardManager) {
     final JMenu toolsMenu = new JMenu("Tools");
     PlatformFactory.ONLY.setMnemonic(toolsMenu,KeyEvent.VK_T);
@@ -6688,6 +6878,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _addMenuItem(toolsMenu, _runAppletAction, KEY_RUN_APPLET, updateKeyboardManager);
     _addMenuItem(toolsMenu, _resetInteractionsAction, KEY_RESET_INTERACTIONS, updateKeyboardManager);
     toolsMenu.addSeparator();
+
+	// Code Coverage
+	_addMenuItem(toolsMenu, _coverageAction, KEY_CODE_COVERAGE, updateKeyboardManager);
+	toolsMenu.addSeparator();
     
     // Javadoc
     final JMenu javadocMenu = new JMenu("Javadoc");
@@ -6821,10 +7015,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return toolsMenu;
   }
   
-  /** Creates and returns a project menu
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns a project menu
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return newly-created project menu
+   */
   private JMenu _setUpProjectMenu(int mask, boolean updateKeyboardManager) {
     JMenu projectMenu = new JMenu("Project");
     PlatformFactory.ONLY.setMnemonic(projectMenu,KeyEvent.VK_P);
@@ -6856,10 +7053,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return projectMenu;
   }
   
-  /** Creates and returns a debug menu.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns a debug menu.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return newly-created debug menu
+   */
   private JMenu _setUpDebugMenu(int mask, boolean updateKeyboardManager) {
     JMenu debugMenu = new JMenu("Debugger");
     PlatformFactory.ONLY.setMnemonic(debugMenu,KeyEvent.VK_D);
@@ -6962,9 +7162,11 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return debugMenu;
   }
   
-  /** Called every time the debug mode checkbox is toggled. The resume and step
-    * functions should always be disabled.
-    */
+  /** 
+   * Called every time the debug mode checkbox is toggled. The resume and step
+   * functions should always be disabled.
+   * @param isEnabled value to set
+   */
   private void _setDebugMenuItemsEnabled(boolean isEnabled) {
     _debuggerEnabledMenuItem.setSelected(isEnabled);
     _guiAvailabilityNotifier.ensureUnavailable(GUIAvailabilityListener.ComponentType.DEBUGGER_SUSPENDED);
@@ -6981,10 +7183,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     if (_showDebugger) { _debugPanel.setAutomaticTraceButtonText(); }
   }
   
-  /** Creates and returns the language levels menu.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns the language levels menu.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return the newly-created language levels menu
+   */
   private JMenu _setUpLanguageLevelMenu(int mask, boolean updateKeyboardManager) {
     JMenu languageLevelMenu = new JMenu("Language Level");
     PlatformFactory.ONLY.setMnemonic(languageLevelMenu,KeyEvent.VK_L);
@@ -7041,10 +7246,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return languageLevelMenu;
   }
   
-  /** Creates and returns a help menu.
-    * @param mask the keystroke modifier to be used
-    * @param updateKeyboardManager true if the keyboard manager should be updated; pass true only for MainFrame!
-    */
+  /** 
+   * Creates and returns a help menu.
+   * @param mask the keystroke modifier to be used
+   * @param updateKeyboardManager true if the keyboard manager should be 
+   *                              updated; pass true only for MainFrame!
+   * @return the newly-created help menu
+   */
   private JMenu _setUpHelpMenu(int mask, boolean updateKeyboardManager) {
     JMenu helpMenu = new JMenu("Help");
     PlatformFactory.ONLY.setMnemonic(helpMenu,KeyEvent.VK_H);
@@ -7061,8 +7269,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return helpMenu;
   }
   
-  /** Creates a toolbar button for undo and redo, which behave differently. */
-  JButton _createManualToolbarButton(Action a) {
+  /** 
+   * Creates a toolbar button for undo and redo, which behave differently. 
+   * @param a an Action
+   * @return the newly-created button
+   */
+  JButton _createManualToolBarButton(Action a) {
     final JButton ret;
     Font buttonFont = DrJava.getConfig().getSetting(FONT_TOOLBAR);
     
@@ -7094,8 +7306,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return ret;
   }
   
-  /** Sets up all buttons for the toolbar except for undo and redo, which use _createManualToolbarButton. */
-  public JButton _createToolbarButton(Action a) {
+  /** 
+   * Sets up all buttons for the toolbar except for undo and redo, which use 
+   * _createManualToolBarButton. 
+   * @param a Action of button to be added
+   * @return the newly-created toolbar button
+   */
+  public JButton _createToolBarButton(Action a) {
     boolean useText = DrJava.getConfig().getSetting(TOOLBAR_TEXT_ENABLED).booleanValue();
     boolean useIcons = DrJava.getConfig().getSetting(TOOLBAR_ICONS_ENABLED).booleanValue();
     Font buttonFont = DrJava.getConfig().getSetting(FONT_TOOLBAR);
@@ -7108,15 +7325,21 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return result;
   }
   
-  /** Removes the button b from the toolbar and creates new button in its place.  Only runs in the event thread. */
-  public JButton _updateToolbarButton(JButton b, Action a) {
-    final JButton result = _createToolbarButton(a);
+  /** 
+   * Removes the button b from the toolbar and creates new button in its place. 
+   * Only runs in the event thread.
+   * @param b button to be removed
+   * @param a Action of button to be added 
+   * @return newly-created button
+   */
+  public JButton _updateToolBarButton(JButton b, Action a) {
+    final JButton result = _createToolBarButton(a);
     
     int index = _toolBar.getComponentIndex(b);
     _toolBar.remove(b);
     _toolBar.add(result, index);
     
-    _fixToolbarHeights();
+    _fixToolBarHeights();
     
     return result;
   }
@@ -7131,17 +7354,17 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
 //     _toolBar.addSeparator();
     
     // New, open, save, close
-    _toolBar.add(_createToolbarButton(_newAction));
-    _toolBar.add(_createToolbarButton(_openFileOrProjectAction));
-    _toolBar.add(_createToolbarButton(_saveAction));
-    _closeButton = _createToolbarButton(_closeAction);
+    _toolBar.add(_createToolBarButton(_newAction));
+    _toolBar.add(_createToolBarButton(_openFileOrProjectAction));
+    _toolBar.add(_createToolBarButton(_saveAction));
+    _closeButton = _createToolBarButton(_closeAction);
     _toolBar.add(_closeButton);
     
     // Cut, copy, paste
     _toolBar.addSeparator();
-    _toolBar.add(_createToolbarButton(cutAction));
-    _toolBar.add(_createToolbarButton(copyAction));
-    _toolBar.add(_createToolbarButton(pasteAction));
+    _toolBar.add(_createToolBarButton(cutAction));
+    _toolBar.add(_createToolBarButton(copyAction));
+    _toolBar.add(_createToolBarButton(pasteAction));
     
     // Undo, redo
     // Simple workaround, for now, for bug # 520742:
@@ -7155,23 +7378,24 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     
     // Find
     _toolBar.addSeparator();
-    _toolBar.add(_createToolbarButton(_findReplaceAction));
+    _toolBar.add(_createToolBarButton(_findReplaceAction));
     
     // Compile, reset, abort
     _toolBar.addSeparator();
-    _toolBar.add(_compileButton = _createToolbarButton(_compileAllAction));
-    _toolBar.add(_createToolbarButton(_resetInteractionsAction));
+    _toolBar.add(_compileButton = _createToolBarButton(_compileAllAction));
+    _toolBar.add(_createToolBarButton(_resetInteractionsAction));
     
     // Run, Junit, and JavaDoc
     _toolBar.addSeparator();
     
-    _toolBar.add(_runButton = _createToolbarButton(_runAction));
-    _toolBar.add(_junitButton = _createToolbarButton(_junitAllAction));
-    _toolBar.add(_createToolbarButton(_javadocAllAction));
-    
+    _toolBar.add(_runButton = _createToolBarButton(_runAction));
+    _toolBar.add(_junitButton = _createToolBarButton(_junitAllAction));
+    _toolBar.add(_createToolBarButton(_javadocAllAction));
+    _toolBar.add(_coverageButton = _createToolBarButton(_coverageAction));    
+
     // DrJava Errors
     _toolBar.addSeparator();
-    _errorsButton = _createToolbarButton(_errorsAction);
+    _errorsButton = _createToolBarButton(_errorsAction);
     _errorsButton.setVisible(false);
     _errorsButton.setBackground(DrJava.getConfig().getSetting(DRJAVA_ERRORS_BUTTON_COLOR));
     _toolBar.add(_errorsButton);
@@ -7194,7 +7418,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
           _runAction.putValue(Action.LONG_DESCRIPTION,
                               "Run the main method of the current document"); 
         }
-        // _runButton = _updateToolbarButton(_runButton, _runAction);
+        // _runButton = _updateToolBarButton(_runButton, _runAction);
         projectRunnableChanged();
       }
     };
@@ -7204,7 +7428,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
                                        getSetting(OptionConstants.SMART_RUN_FOR_APPLETS_AND_PROGRAMS)));
     
     // Correct the vertical height of the buttons.
-    _fixToolbarHeights();
+    _fixToolBarHeights();
     
     // Plastic-specific style hints
     if(Utilities.isPlasticLaf()) {
@@ -7225,7 +7449,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   /** Update the toolbar's buttons, following any change to TOOLBAR_ICONS_ENABLED, TOOLBAR_TEXT_ENABLED, or 
     * FONT_TOOLBAR (name, style, text)
     */
-  private void _updateToolbarButtons() {
+  private void _updateToolBarButtons() {
     _updateToolBarVisible();
     Component[] buttons = _toolBar.getComponents();
     
@@ -7276,11 +7500,11 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
     
     // Correct the vertical height of the buttons.
-    _fixToolbarHeights();
+    _fixToolBarHeights();
   }
   
   /** Ensures that all toolbar buttons have the same height. */
-  private void _fixToolbarHeights() {
+  private void _fixToolBarHeights() {
     Component[] buttons = _toolBar.getComponents();
     
     // First, find the maximum height of all the buttons.
@@ -7429,8 +7653,8 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _interactionsController.setNextPaneAction(_switchToNextPaneAction);
     
     JScrollPane interactionsScroll = 
-      new BorderlessScrollPane(_interactionsPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-                               JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+      new BorderlessScrollPane(_interactionsPane, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
+                               ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     _interactionsContainer.add(interactionsScroll, BorderLayout.CENTER);
     
     if (_showDebugger) {
@@ -8072,8 +8296,8 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     
     // Add to a scroll pane
     final JScrollPane scroll = 
-      new BorderlessScrollPane(pane, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, 
-                               JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+      new BorderlessScrollPane(pane, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, 
+                               ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
     pane.setScrollPane(scroll);
     //scroll.setBorder(null); // removes all default borders (MacOS X installs default borders)
     
@@ -8277,10 +8501,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     scroll.revalidate();
   }
   
-  /** Gets the absolute file, or if necessary, the canonical file.
-    * @param f the file for which to get the full path
-    * @return the file representing the full path to the given file
-    */
+  /** 
+   * Gets the absolute file, or if necessary, the canonical file.
+   * @param f the file for which to get the full path
+   * @return the file representing the full path to the given file
+   * @throws IOException if an IO operation fails
+   */
   private File _getFullFile(File f) throws IOException {
     if (PlatformFactory.ONLY.isWindowsPlatform() &&
         ((f.getAbsolutePath().indexOf("..") != -1) || (f.getAbsolutePath().indexOf("./") != -1) ||
@@ -8290,7 +8516,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     return f.getAbsoluteFile();
   }
   
-  /** Sets the current directory to be that of the given file. */
+  /** 
+   * Sets the current directory to be that of the given file. 
+   * @param file directory to be set
+   */
   private void _setCurrentDirectory(File file) {
     /* We want to use absolute paths whenever possible, since canonical paths resolve symbolic links and can be quite
      * long and unintuitive.  However, Windows blows up if you set the current directory of a JFileChooser to an 
@@ -8308,7 +8537,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Sets the current directory to be that of document's file.   */
+  /** 
+   * Sets the current directory to be that of document's file.
+   * @param doc file to be set
+   */
   private void _setCurrentDirectory(OpenDefinitionsDocument doc) {
     try {
       File file = doc.getFile();
@@ -9028,7 +9260,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     
     public void fileClosed(final OpenDefinitionsDocument doc) { _fileClosed(doc); }
     
-    /** Does the work of closing a file */
+    /** 
+     * Does the work of closing a file 
+     * @param doc the file to be closed
+     */
     private void _fileClosed(OpenDefinitionsDocument doc) {
 //      assert EventQueue.isDispatchThread();
       _recentDocFrame.closeDocument(doc);
@@ -9302,7 +9537,14 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
 //      new ScrollableDialog(null, "MainFrame.junitEnded() called", "", "").show();
       _guiAvailabilityNotifier.junitFinished(); // JUNIT and COMPILER
       // Use EventQueue invokeLater to ensure that JUnit panel is "reset" after it is updated with test results
-      EventQueue.invokeLater(new Runnable() { public void run() { _junitPanel.reset(); } });
+      EventQueue.invokeLater(new Runnable() { 
+        public void run() { 
+          _junitPanel.reset();
+          if (_model.getJUnitModel().getCoverage()) {
+            _coverageFrame.displayReport(_model.getJUnitModel().getLastResult());
+          }
+        }
+      });
       _model.refreshActiveDocument();
     }
     
@@ -9515,11 +9757,13 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
          "Always save before running Javadoc", afterCompile);
     }    
     
-    /** Helper method shared by all "compileBeforeX" methods.
-      * @param message a prompt message to be displayed to the user
-      * @param option the BooleanOption for the prompt dialog checkbox
-      * @param checkMsg the description of the checkbox ("Always compile before X")
-      */
+    /** 
+     * Helper method shared by all "compileBeforeX" methods.
+     * @param message a prompt message to be displayed to the user
+     * @param option the BooleanOption for the prompt dialog checkbox
+     * @param checkMsg the description of the checkbox ("Always compile before X")
+     * @param afterCompile a CompilerListener
+     */
     private void _compileBeforeProceeding(String message, BooleanOption option, String checkMsg,
                                           final CompilerListener afterCompile) {
 //      new ScrollableDialog(null, "saveBeforeProceeding called in MainFrame", "", "").show();
@@ -9749,9 +9993,9 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
       _model.getDocumentNavigator().asContainer().addMouseListener(_resetFindReplaceListener);
 //      new ScrollableDialog(null, "Closing JUnit Error Panel in MainFrame", "", "").show();
       removeTab(_junitPanel);
-      _runButton = _updateToolbarButton(_runButton, _runAction);
-      _compileButton = _updateToolbarButton(_compileButton, _compileAllAction);
-      _junitButton = _updateToolbarButton(_junitButton, _junitAllAction);
+      _runButton = _updateToolBarButton(_runButton, _runAction);
+      _compileButton = _updateToolBarButton(_compileButton, _compileAllAction);
+      _junitButton = _updateToolBarButton(_junitButton, _junitAllAction);
       projectRunnableChanged();
     }
     
@@ -9812,10 +10056,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _guiAvailabilityNotifier.ensureAvailabilityIs(GUIAvailabilityListener.ComponentType.PROJECT_MAIN_CLASS,
                                                   mainClassSet);
     if (mainClassSet) {
-      _runButton = _updateToolbarButton(_runButton, _runProjectAction);
+      _runButton = _updateToolBarButton(_runButton, _runProjectAction);
     }
     else {
-      _runButton = _updateToolbarButton(_runButton, _runAction);
+      _runButton = _updateToolBarButton(_runButton, _runAction);
     }
   }
   
@@ -9895,7 +10139,12 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Warns the user that the current file is open and query them if they wish to save over the currently open file. */
+  /** 
+   * Warns the user that the current file is open and query them if they wish 
+   * to save over the currently open file. 
+   * @param f file to warn the user about
+   * @return boolean
+   */
   private boolean _warnFileOpen(File f) {
     OpenDefinitionsDocument d = null;
     try { d = _model.getDocumentForFile(f); }
@@ -9956,7 +10205,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   
   boolean isDebuggerEnabled() { return _showDebugger; }
   
-  /** Return the find replace dialog. Package protected for use in tests. */
+  /** @return the find replace dialog. Package protected for use in tests. */
   FindReplacePanel getFindReplaceDialog() { return _findReplace; }
   
   /** Builds the Hashtables in KeyBindingManager that record key-bindings and support live updating, conflict 
@@ -10024,13 +10273,22 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     _docSplitPane.getLeftComponent().addComponentListener(listener);
   }
   
-  /**For test purposes only. Returns the text in the status bar. Is used to test brace matching*/
+  /**
+   * For test purposes only. Is used to test brace matching
+   * @return the text in the status bar
+   */
   public String getFileNameField() { return _statusField.getText(); }
   
-  /**For test purposes only. Returns the text in the status bar. Is used to test brace matching*/
+  /**
+   * For test purposes only. Is used to test brace matching
+   * @return the text in the status bar
+   */
   public String getStatusMessage() { return _statusReport.getText(); }
   
-  /**For test purposes only. Returns the edit menu*/
+  /**
+   * For test purposes only. 
+   * @return the edit menu
+   */
   public JMenu getEditMenu() { return _editMenu; }
   
   /** The OptionListener for FONT_MAIN */
@@ -10052,8 +10310,8 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   }
   
   /** The OptionListener for FONT_TOOLBAR */
-  private class ToolbarFontOptionListener implements OptionListener<Font> {
-    public void optionChanged(OptionEvent<Font> oce) { _updateToolbarButtons(); }
+  private class ToolBarFontOptionListener implements OptionListener<Font> {
+    public void optionChanged(OptionEvent<Font> oce) { _updateToolBarButtons(); }
   }
   
   /** The OptionListener for DEFINITIONS_NORMAL_COLOR */
@@ -10067,8 +10325,8 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   }
   
   /** The OptionListener for TOOLBAR options */
-  private class ToolbarOptionListener implements OptionListener<Boolean> {
-    public void optionChanged(OptionEvent<Boolean> oce) { _updateToolbarButtons(); }
+  private class ToolBarOptionListener implements OptionListener<Boolean> {
+    public void optionChanged(OptionEvent<Boolean> oce) { _updateToolBarButtons(); }
   }
   
   /** The OptionListener for LINEENUM_ENABLED. */
@@ -10182,7 +10440,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }    
   }
   
-  /** Open stand-alone external process file. */
+  /** 
+   * Open stand-alone external process file. 
+   * @param file the file to be opened
+   */
   public static void openExtProcessFile(File file) {
     try {
       XMLConfig xc = new XMLConfig(file);
@@ -10200,7 +10461,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
     }
   }
   
-  /** Open external process file in a jar file. */
+  /** 
+   * Open external process file in a jar file.
+   * @param file the file to be opened
+   */
   public static void openExtProcessJarFile(File file) {
     try {
       JarFile jf = new JarFile(file);
@@ -10330,7 +10594,7 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
           EventQueue.invokeLater(new Runnable() { 
             public void run() { // interpret with the added import
               try {
-                im.append(code, InteractionsDocument.DEFAULT_STYLE);
+                im.append(code, ConsoleDocument.DEFAULT_STYLE);
                 im.interpretCurrentInteraction();
               }
               finally { hourglassOff(); }
@@ -10380,7 +10644,10 @@ public class MainFrame extends SwingFrame implements ClipboardOwner, DropTargetL
   PredictiveInputFrame<JavaAPIListEntry> _autoImportDialog = null;
   JCheckBox _autoImportPackageCheckbox;
   
-  /** Imports a class. */
+  /** 
+   * Imports a class. 
+   * @param s the string to show
+   */
   private void _showAutoImportDialog(final String s) {
     hourglassOn();
     new Thread() {

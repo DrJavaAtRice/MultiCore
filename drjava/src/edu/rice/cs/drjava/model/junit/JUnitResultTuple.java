@@ -34,28 +34,28 @@
  * 
  * END_COPYRIGHT_BLOCK*/
 
-package edu.rice.cs.util.sexp;
+package edu.rice.cs.drjava.model.junit;
 
-public class BoolAtom implements Atom {
-  public static final BoolAtom TRUE = new BoolAtom(true);
-  public static final BoolAtom FALSE = new BoolAtom(false);
-  
-  private boolean _bool;
-  private BoolAtom(boolean bool) { _bool = bool; }
-  
-  /** @return which type of BoolAtom this is
-   */
-  public boolean getValue() {
-    return _bool;
-  }
-  
-  /** Visitor hook for the BoolAtom
-    * @param v the visitor
-    * @return result of the given algorithm
-    */
-  public <Ret> Ret accept(SExpVisitor<Ret> v){
-    return v.forBoolAtom(this);
-  }
-  
-  public String toString() { return "" + _bool; }
+import java.util.Map;
+import java.util.List;
+
+import java.io.Serializable;
+
+public class JUnitResultTuple implements Serializable {
+
+    private boolean retval;
+    private Map<String, List<String>> lineColors;
+
+    public JUnitResultTuple(boolean retval, Map<String, List<String>> lineColors) {
+        this.retval = retval;
+        this.lineColors = lineColors;  
+    }
+
+    public boolean getRetval() {
+        return this.retval;
+    }
+
+    public Map<String, List<String>> getLineColors() {
+        return this.lineColors;
+    }
 }

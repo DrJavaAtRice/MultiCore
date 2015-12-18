@@ -37,7 +37,6 @@
 package edu.rice.cs.drjava.model;
 
 import edu.rice.cs.drjava.DrJava;
-
 import edu.rice.cs.drjava.model.compiler.CompilerListener;
 import edu.rice.cs.drjava.model.repl.InteractionsDocument;
 import edu.rice.cs.drjava.model.junit.JUnitModel;
@@ -53,15 +52,16 @@ import edu.rice.cs.util.UnexpectedException;
 import edu.rice.cs.util.classloader.ClassFileError;
 import edu.rice.cs.util.swing.Utilities;
 import edu.rice.cs.util.swing.AsyncTask;
+import edu.rice.cs.util.text.ConsoleDocument;
 import edu.rice.cs.util.text.EditDocumentException;
 
 import javax.swing.text.BadLocationException;
+
 import java.io.File;
 import java.io.IOException;
 import java.rmi.UnmarshalException;
 import java.util.regex.*;
 import java.util.List;
-import junit.framework.Assert;
 
 import static edu.rice.cs.plt.debug.DebugUtil.debug;
 
@@ -161,7 +161,11 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
 //    System.err.println("Completed tear down of " + this);
   }
 
-  /** Clear all old text and insert the given text. */
+  /** 
+   * Clear all old text and insert the given text. 
+   * @param s the new text to be set
+   * @param doc the document in which to change the text
+   */
   protected void changeDocumentText(final String s, final OpenDefinitionsDocument doc) /*throws BadLocationException */{
     Utilities.invokeAndWait(new Runnable() {
       public void run() {
@@ -177,36 +181,59 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     });
   }
 
-  /** Create a new temporary file in _tempDir. */
+  /** 
+   * Create a new temporary file in _tempDir.
+   * @return new temporary file in _tempDir. 
+   * @throws IOException if an IO operation fails
+   */
   protected File tempFile() throws IOException {
     File f = File.createTempFile("DrJava-test", ".java", _tempDir).getCanonicalFile();
 //    System.err.println("temp file created with name " + f);
     return f;
   }
 
-  /** Create a new temporary file in _tempDir.  Calls with the same int will return the same filename, while calls
-   *  with different ints will return different filenames.
+  /** 
+   * Create a new temporary file in _tempDir.  Calls with the same int will 
+   * return the same filename, while calls with different ints will return 
+   * different filenames.
+   * @param i index to be appended to the filename
+   * @return new temporary file in _tempDir. 
+   * @throws IOException if an IO operation fails
    */
   protected File tempFile(int i) throws IOException {
     return File.createTempFile("DrJava-test" + i, ".java", _tempDir).getCanonicalFile();
   }
 
-  /** Create a new temporary directory in _tempDir. */
+  /** 
+   * Create a new temporary directory in _tempDir. 
+   * @return new temporary file in _tempDir. 
+   * @throws IOException if an IO operation fails
+   */
   protected File tempDirectory() throws IOException {
     return IOUtil.createAndMarkTempDirectory("DrJava-test", "", _tempDir);
   }
 
   protected File createFile(String name) { return new File(_tempDir, name); }
 
-  /** Given a .java file and a class file name, returns the corresponding .class file. */
+  /** 
+   * Given a .java file and a class file name, returns the corresponding 
+   * .class file. 
+   * @param sourceFile .java file name
+   * @param className class file name
+   * @return the class file
+   */
   protected File classForJava(File sourceFile, String className) {
     assertTrue(sourceFile.getName().endsWith(".java"));
     String cname = className + ".class";
     return new File(sourceFile.getParent(), cname);
   }
 
-  /** Creates a new temporary file and writes the given text to it.
-   *  The File object for the new file is returned.
+  /** 
+   * Creates a new temporary file and writes the given text to it.
+   * The File object for the new file is returned.
+   * @param text the text to be written to the file
+   * @return the file object for the new file
+   * @throws IOException if an IO operation fails 
    */
   protected File writeToNewTempFile(String text) throws IOException {
     File temp = tempFile();
@@ -214,10 +241,13 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     return temp;
   }
 
-  /** Creates and returns a new document, makes sure newFile is fired, and then adds some text.  When this method is
-    * done newCount is reset to 0.
-    * @return the new modified document
-    */
+  /** 
+   * Creates and returns a new document, makes sure newFile is fired, and then 
+   * adds some text.  When this method is done newCount is reset to 0.
+   * @param text the text to be written to the file
+   * @return the new modified document
+   * @throws BadLocationException if attempts to reference an invalid location
+   */
   protected OpenDefinitionsDocument setupDocument(final String text) throws BadLocationException {
     TestListener listener = new TestListener() {
       public void newFileCreated(OpenDefinitionsDocument doc) { newCount++; }
@@ -258,7 +288,10 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     });
   }
                                 
-  /** Invokes startCompile on the given document in the event thread. */
+  /** 
+   * Invokes startCompile on the given document in the event thread. 
+   * @param doc the document to be compiled
+   */
   protected static void testStartCompile(final OpenDefinitionsDocument doc) {
     Utilities.invokeLater(new Runnable() { 
       public void run() { 
@@ -267,11 +300,16 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
       } 
     });
   }
-  /** Compiles a new file with the given text. The compile is expected to succeed and it is checked to make sure it
-   *  worked reasonably.  This method does not return until the Interactions JVM has reset and is ready to use.
-   *  @param text Code for the class to be compiled
-   *  @param file File to save the class in
-   *  @return Document after it has been saved and compiled
+  /** 
+   * Compiles a new file with the given text. The compile is expected to 
+   * succeed and it is checked to make sure it worked reasonably.  This method 
+   * does not return until the Interactions JVM has reset and is ready to use.
+   * @param text Code for the class to be compiled
+   * @param file File to save the class in
+   * @return Document after it has been saved and compiled
+   * @throws IOException if an IO operation fails
+   * @throws BadLocationException if attempts to reference an invalid location
+   * @throws InterruptedException if execution is interrupted unexpectedly
    */
   protected synchronized OpenDefinitionsDocument doCompile(String text, File file) throws IOException, 
     BadLocationException, InterruptedException {
@@ -281,11 +319,15 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     return doc;
   }
 
-  /** Saves to the given file, and then compiles the given document. The compile is expected to succeed and it is 
-   *  checked to make sure it worked reasonably.  This method does not return until the Interactions JVM has reset
-   *  and is ready to use.
-   *  @param doc Document containing the code to be compiled
-   *  @param file File to save the class in
+  /** 
+   * Saves to the given file, and then compiles the given document. The 
+   * compile is expected to succeed and it is checked to make sure it worked 
+   * reasonably.  This method does not return until the Interactions JVM has 
+   * reset and is ready to use.
+   * @param doc Document containing the code to be compiled
+   * @param file File to save the class in
+   * @throws IOException if an IO operation fails
+   * @throws InterruptedException if execution is interrupted unexpectedly
    */
   protected void doCompile(final OpenDefinitionsDocument doc, File file) throws IOException,  InterruptedException {
     saveFile(doc, new FileSelector(file));
@@ -316,7 +358,7 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     _model.removeListener(listener);
   }
 
-  /** Returns a string with all compiler errors. */
+  /** @return a string with all compiler errors. */
   protected String getCompilerErrorString() {
     final StringBuilder buf = new StringBuilder();
     buf.append(" compiler error(s):\n");
@@ -324,14 +366,17 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     return buf.toString();
   }
 
-  /** Puts the given input into the interactions document and then interprets it, returning the result that was put
-    * into the interactions document. This assumes the interactions document is in a state with no text after the 
-    * prompt. To be sure this is the case, you can reset interactions first.  This method provides its own listener
-    * to synchronized with the completion of the interaction.
-    *
-    * @param input text to interpret
-    * @return The output from this interpretation, in String form, as it was printed to the interactions document.
-    */
+  /** 
+   * Puts the given input into the interactions document and then interprets 
+   * it, returning the result that was put into the interactions document. 
+   * This assumes the interactions document is in a state with no text after 
+   * the prompt. To be sure this is the case, you can reset interactions 
+   * first. This method provides its own listener to synchronized with the 
+   * completion of the interaction.
+   * @param input text to interpret
+   * @return The output from this interpretation, in String form, as it was printed to the interactions document.
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected String interpret(final String input) throws EditDocumentException {
     
     final InteractionsDocument interactionsDoc = _model.getInteractionsDocument();
@@ -343,7 +388,7 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     Utilities.invokeAndWait(new Runnable() {
       public void run() {
         interactionsDoc.setInProgress(false);  // for some reason, the inProgress state can be true when interpret is invoked
-        interactionsDoc.append(input, InteractionsDocument.DEFAULT_STYLE);
+        interactionsDoc.append(input, ConsoleDocument.DEFAULT_STYLE);
       }
     });
     
@@ -375,10 +420,14 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     return interactionsDoc.getDocText(resultsStartLocation, resultsLen);
   }
 
-  /** Appends the input string to the interactions pane and interprets it. */
+  /** 
+   * Appends the input string to the interactions pane and interprets it. 
+   * @param input string to be appended
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected void interpretIgnoreResult(String input) throws EditDocumentException {
     InteractionsDocument interactionsDoc = _model.getInteractionsDocument();
-    interactionsDoc.append(input, InteractionsDocument.DEFAULT_STYLE);
+    interactionsDoc.append(input, ConsoleDocument.DEFAULT_STYLE);
     try { _model.interpretCurrentInteraction(); }
     catch(RuntimeException re) { // On Windows, UnmarshalExceptions are sometime thrown
       Throwable cause = re.getCause();
@@ -386,12 +435,20 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     }
   }
 
-  /** Asserts that the given string exists in the Interactions Document. */
+  /** 
+   * Asserts that the given string exists in the Interactions Document. 
+   * @param text text to search for within the interactions document
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected void assertInteractionsContains(String text) throws EditDocumentException {
     _assertInteractionContainsHelper(text, true);
   }
 
-  /** Asserts that the given string does not exist in the Interactions Document. */
+  /** 
+   * Asserts that the given string does not exist in the Interactions Document. 
+   * @param text text to search for within the interactions document
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected void assertInteractionsDoesNotContain(String text) throws EditDocumentException {
     _assertInteractionContainsHelper(text, false);
   }
@@ -409,12 +466,20 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
                (contains != -1) == shouldContain);
   }
 
-  /** Asserts that the text in the Interactions Document matches the given regex. */
+  /** 
+   * Asserts that the text in the Interactions Document matches the given regex. 
+   * @param regex regex to search for a match against
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected void assertInteractionsMatches(String regex) throws EditDocumentException {
     _assertInteractionMatchesHelper(regex, true);
   }
 
-  /** Asserts that the text in the Interactions Document does NOT match the given regex. */
+  /** 
+   * Asserts that the text in the Interactions Document does NOT match the given regex. 
+   * @param regex regex to search for a match against
+   * @throws EditDocumentException if an error occurs while editing the document
+   */
   protected void assertInteractionsDoesNotMatch(String regex)
     throws EditDocumentException {
     _assertInteractionMatchesHelper(regex, false);
@@ -433,7 +498,7 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
                matches == shouldMatch);
   }
 
-  /** Returns the current contents of the interactions document */
+  /** @return the current contents of the interactions document */
   protected String getInteractionsText() throws EditDocumentException {
     InteractionsDocument doc = _model.getInteractionsDocument();
     return doc.getText();
@@ -455,7 +520,11 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     assertEquals("document contents", s, doc.getText());
   }
   
-    /** Invokes doc.saveFile from within the event thread. */
+  /** 
+   * Invokes doc.saveFile from within the event thread. 
+   * @param doc document to be saved
+   * @param fss a FileSaveSelector
+   */
   protected void saveFile(final OpenDefinitionsDocument doc, final FileSaveSelector fss) {
     Utilities.invokeAndWait(new Runnable() { 
       public void run() { 
@@ -464,7 +533,11 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
       } });
   }
   
-  /** Invokes doc.saveFileAs from within the event thread. */
+  /** 
+   * Invokes doc.saveFileAs from within the event thread. 
+   * @param doc document to be saved
+   * @param fss a FileSaveSelector
+   */
   protected void saveFileAs(final OpenDefinitionsDocument doc, final FileSaveSelector fss) {
     Utilities.invokeAndWait(new Runnable() { 
       public void run() { 
@@ -473,7 +546,11 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
       } });
   }
   
-  /** Invokes doc.saveFileCopy from within the event thread. */
+  /** 
+   * Invokes doc.saveFileCopy from within the event thread. 
+   * @param doc document to be saved
+   * @param fss a FileSaveSelector
+   */
   protected void saveFileCopy(final OpenDefinitionsDocument doc, final FileSaveSelector fss) {
     Utilities.invokeAndWait(new Runnable() { 
       public void run() { 
@@ -668,7 +745,10 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     
     public void currentDirectoryChanged(File dir) { }
     
-    /** Appends the stack trace from the listener's creation to the end of the given failure message. */
+    /** 
+     * Appends the stack trace from the listener's creation to the end of the given failure message. 
+     * @param message the failure message
+     */
     public void listenerFail(String message) {
       String header = "\nTestListener creation stack trace:\n" + StringOps.getStackTrace(_startupTrace);
       MultiThreadedTestCase.listenerFail(message + header);
@@ -1195,7 +1275,13 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
       _junitDone = false; 
     }
     
-    /** Runs JUnit on doc to completion. */
+    /** 
+     * Runs JUnit on doc to completion. 
+     * @param doc the document on which to run JUnit
+     * @throws IOException if an IO operation fails
+     * @throws ClassNotFoundException if a class is not found
+     * @throws InterruptedException if execution is interrupted unexpectedly
+     */
     public void runJUnit(OpenDefinitionsDocument doc) throws IOException, ClassNotFoundException, 
       InterruptedException {
       logJUnitStart();
@@ -1238,40 +1324,40 @@ public abstract class GlobalModelTestCase extends MultiThreadedTestCase {
     }
      
     @Override public void junitStarted() {
-      if (printMessages) System.out.println("listener.junitStarted");
+      _log.log("listener.junitStarted");
       synchronized(this) { junitStartCount++; }
     }
     @Override public void junitSuiteStarted(int numTests) {
-      if (printMessages) System.out.println("listener.junitSuiteStarted, numTests = " + numTests);
+      _log.log("listener.junitSuiteStarted, numTests = " + numTests);
       assertJUnitStartCount(1);
       synchronized(this) { junitSuiteStartedCount++; }
     }
     @Override public void junitTestStarted(String name) {
-      if (printMessages) System.out.println("  listener.junitTestStarted, " + name);
+      _log.log("  listener.junitTestStarted, " + name);
       synchronized(this) { junitTestStartedCount++; }
     }
     @Override public void junitTestEnded(String name, boolean wasSuccessful, boolean causedError) {
-      if (printMessages) System.out.println("  listener.junitTestEnded, name = " + name + " succ = " + wasSuccessful + 
+      _log.log("  listener.junitTestEnded, name = " + name + " succ = " + wasSuccessful + 
                                             " err = " + causedError);
       synchronized(this) { junitTestEndedCount++; }
       assertEquals("junitTestEndedCount should be same as junitTestStartedCount", junitTestEndedCount, 
                    junitTestStartedCount);
     }
     @Override public void nonTestCase(boolean isTestAll, boolean didCompileFail) {
-      if (printMessages) System.out.println("listener.nonTestCase, isTestAll=" + isTestAll);
+      _log.log("listener.nonTestCase, isTestAll=" + isTestAll);
       synchronized(this) { nonTestCaseCount++; }
       _log.log("nonTestCase() called; notifying JUnitDone");
       _notifyJUnitDone();
     }
     @Override public void classFileError(ClassFileError e) {
-      if (printMessages) System.out.println("listener.classFileError, e=" + e);
+      _log.log("listener.classFileError, e=" + e);
       synchronized(this) { classFileErrorCount++; }
       _log.log("classFileError() called; notifying JUnitDone");
       _notifyJUnitDone();
     }
     @Override public void junitEnded() {
       // assertJUnitSuiteStartedCount(1);
-      if (printMessages) System.out.println("junitEnded event!");
+      _log.log("junitEnded event!");
       synchronized(this) { junitEndCount++; }
       _log.log("junitEnded() called; notifying JUnitDone");
       _notifyJUnitDone();
